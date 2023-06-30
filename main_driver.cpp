@@ -244,7 +244,8 @@ static void run_standalone(int argc, char* argv[]){
 }
 
 int main(int argc, char* argv[]){
-    int rc = 0;
+	std::cout<<"helo\n"<<std::endl; 
+	int rc = 0;
     try {
         run_standalone(argc, argv);
     } catch(common::Error& e){

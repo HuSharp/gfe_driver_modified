@@ -216,6 +216,10 @@ void Configuration::initialise(int argc, char* argv[]){
             string library_name = result["library"].as<string>();
             transform(begin(library_name), end(library_name), begin(library_name), ::tolower); // make it lower case
             auto libs = library::implementations();
+	    std::cout<<libs.size()<<std::endl;
+	    for(auto x:libs){
+	    	std::cout<<x.m_name<<endl;
+	    }
             auto library_found = find_if(begin(libs), end(libs), [&library_name](const auto& candidate){
                 return library_name == candidate.m_name;
             });
