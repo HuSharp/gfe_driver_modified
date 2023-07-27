@@ -15,6 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include <iostream>
+#include<vector>
+#include<random>
 
 #include "common/database.hpp"
 #include "common/error.hpp"
@@ -31,6 +33,8 @@
 #include "third-party/cxxopts/cxxopts.hpp"
 #include "utility/memory_usage.hpp"
 
+#include "library/sortledton/sortledton_driver.hpp"
+
 #include "configuration.hpp"
 #if defined(HAVE_OPENMP)
 #include "omp.h"
@@ -42,6 +46,7 @@ using namespace common;
 using namespace gfe;
 using namespace gfe::experiment;
 using namespace std;
+
 
 static void run_standalone(int argc, char* argv[]){
     configuration().initialise(argc, argv);
@@ -104,30 +109,129 @@ static void run_standalone(int argc, char* argv[]){
         if(impl_upd.get() == nullptr){ ERROR("The library `" << configuration().get_library_name() << "' does not support updates"); }
 
         if(configuration().get_update_log().empty()){
-            LOG("[driver] Using the graph " << path_graph);
-            auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
-            if (!configuration().is_timestamped_graph()) {
-              LOG("[driver] graph is not sorted by timestamp: permuting");
-              stream->permute();
-            } else {
-              LOG("[driver] graph is sorted by timestamp: no shuffling");
+
+            // gfe::library::Interface *new_impl = new gfe::library::SortledtonDriver(configuration().is_graph_directed(),8,64);
+
+            impl_upd->create_epoch(10002);
+            impl_upd->add_vertex(100);
+            
+
+            for(int i=500;i<1000;i++)
+                impl_upd->add_vertex(i);
+
+            std::vector<int>  edgess;
+            for(int i=500;i<1000;i++)
+            edgess.push_back(i);
+
+            auto rng = std::default_random_engine {0};
+            std::shuffle(edgess.begin(), edgess.end(), rng);
+
+            // for(int i=0;i<edgess.size();i++)
+            // cout<<edgess[i]<<" ";
+            // cout<<endl;
+
+            for(int i=0;i<edgess.size();i++)
+            {
+                gfe::graph::WeightedEdge e{100,edgess[i],edgess[i]+100};
+                impl_upd->add_edge(e);
+                // impl_upd->get_weight(100,500);
+            }   
+
+            impl_upd->get_weight(100,500);
+
+            std::shuffle(edgess.begin(), edgess.end(), rng);
+
+            vector<int> remove_edges;
+
+            for(int i=0;i<200;i++)
+            remove_edges.push_back(edgess[i]);
+
+            for(int i=0;i<remove_edges.size();i++)
+            {
+                gfe::graph::WeightedEdge e{100, remove_edges[i],100+remove_edges[i]};
+                impl_upd->remove_edge(e);
             }
-            if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
 
-            LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
+            // impl_upd->get_weight(100,500);
 
-            if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
+            impl_upd->create_epoch(20002);
 
-            InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
-            experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
-            experiment.set_scheduler_granularity(1ull < 20);
-            experiment.execute();
-            if(configuration().has_database()) experiment.save();
+            for(int i=0;i<50;i++)
+            {
+                cout<<"in new epoch: "<<remove_edges[i]<<endl;
+                gfe::graph::WeightedEdge e{100,remove_edges[i],100+remove_edges[i]};
+                impl_upd->add_edge(e);
+            }
 
-          if(configuration().validate_inserts() && impl_upd->can_be_validated()){
-              num_validation_errors = validate_updates(impl_upd, stream);
-          }
-        } else {
+            double ans = impl_upd->get_weight(100,568);
+            cout<<"ans: "<<ans<<endl;
+
+            impl_upd->create_epoch(30002);
+            cout<<endl;
+
+            for(int i=200;i<201;i++)
+            {
+                cout<<"deleting: ";
+                                cout<<edgess[i]<<" \n";
+                // if(edgess[i]==568) break;
+                gfe::graph::WeightedEdge e{100,edgess[i],100+edgess[i]};
+                impl_upd->remove_edge(e);
+            }
+
+            
+            for(int i=201;i<edgess.size();i++)
+            {
+                double ans = impl_upd->get_weight(100,edgess[i]);
+                cout<<"ans for edge "<<edgess[i]<<": "<<ans<<endl;
+            }
+
+            // impl_upd->get_weight(100,500);
+
+            // for(int i=500;i<1000;i++)
+            // {
+            //     double ans = impl_upd->get_weight(100,i);
+            //     cout<<ans<<" ";
+
+            //     // if(ans!=i+100) break;
+            // }
+            // cout<<endl;
+
+            // gfe::graph::WeightedEdge e{100,545,645};
+            //     impl_upd->add_edge(e);
+
+            
+            // impl_upd->add_vertex(564);
+            // gfe::graph::WeightedEdge w{100,564,664};
+            // impl_upd->add_edge(w);
+
+           
+
+        //     LOG("[driver] Using the graph " << path_graph);
+        //     auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
+        //     if (!configuration().is_timestamped_graph()) {
+        //       LOG("[driver] graph is not sorted by timestamp: permuting");
+        //       stream->permute();
+        //     } else {
+        //       LOG("[driver] graph is sorted by timestamp: no shuffling");
+        //     }
+        //     if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
+
+        //     LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
+
+        //     if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
+
+        //     InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
+        //     experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
+        //     experiment.set_scheduler_granularity(1ull < 20);
+        //     experiment.execute();
+        //     if(configuration().has_database()) experiment.save();
+
+        //   if(configuration().validate_inserts() && impl_upd->can_be_validated()){
+        //       num_validation_errors = validate_updates(impl_upd, stream);
+        //   }
+        }
+        
+         else {
             if (configuration().is_mixed_workload()) {
               LOG("[driver] Number of write threads: " << configuration().num_threads(THREADS_WRITE));
               LOG("[driver] Number of read threads: " << configuration().num_threads(THREADS_READ));

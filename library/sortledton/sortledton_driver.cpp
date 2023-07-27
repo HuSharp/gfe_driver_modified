@@ -670,4 +670,9 @@ namespace gfe::library {
       tm.deregister_thread(0);
     }
 
+    bool SortledtonDriver::create_epoch(uint64_t version){
+      return tm.create_epoch(version);
+    }
+
+
 }

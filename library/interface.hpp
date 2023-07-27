@@ -152,6 +152,8 @@ public:
     virtual bool can_be_validated() const;
 
     virtual bool has_weights() const;
+
+    virtual bool create_epoch(uint64_t);
 };
 
 /**

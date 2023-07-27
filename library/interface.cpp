@@ -571,6 +571,10 @@ bool UpdateInterface::batch(const SingleUpdate* array, size_t array_sz, bool for
     return result;
 }
 
+bool Interface::create_epoch(uint64_t x){
+    
+}
+
 template<typename Action, typename Edge>
 void UpdateInterface::batch_try_again(Action action, Edge edge){
     constexpr chrono::seconds timeout = 10min;
