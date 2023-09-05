@@ -63,7 +63,8 @@ void InsertOnly::execute_round_robin(){
     vector<thread> threads;
 
     atomic<uint64_t> start_chunk_next = 0;
-
+    auto interface = m_interface.get();
+    interface->create_epoch(100);
     for(int64_t i = 0; i < m_num_threads; i++){
         threads.emplace_back([this, &start_chunk_next](int thread_id){
             concurrency::set_thread_name("Worker #" + to_string(thread_id));

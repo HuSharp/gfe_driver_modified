@@ -22,6 +22,7 @@
 #include <mutex>
 #include <random>
 #include <thread>
+#include <set>
 
 #include "common/circular_array.hpp"
 #include "graph/edge.hpp"
@@ -58,7 +59,6 @@ class Aging2Worker {
     std::thread m_thread; // the thread associated to the background thread/service
     std::mutex m_mutex;
     std::condition_variable m_condvar;
-
     // start the service, i.e. the execution of the background thread
     void start();
 

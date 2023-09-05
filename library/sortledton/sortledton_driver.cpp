@@ -7,6 +7,7 @@
 #include <chrono>
 #include <optional>
 #include <omp.h>
+#include <iostream>
 
 //#include "third-party/gapbs/gapbs.hpp"
 
@@ -282,7 +283,7 @@ namespace gfe::library {
         Timer t;
         t.start();
         ds->gc_all();
-        gced = true;
+        // gced = true;
         cout << "Running GC took: " << t;
       }
     }
@@ -333,7 +334,7 @@ namespace gfe::library {
       tm.register_thread(0);
       SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
-      run_gc();
+      // run_gc();
 
       auto physical_src = tx.physical_id(source_vertex_id);
 
@@ -346,6 +347,10 @@ namespace gfe::library {
       cout << "Translation took " << t << endl;
       tm.transactionCompleted(tx);
 
+      // for (auto x: distances)
+      // cout<<x<<" ";
+      // cout<<endl;
+
       if (dump2file != nullptr) {
         save_bfs(external_ids, dump2file);
       }
@@ -357,7 +362,7 @@ namespace gfe::library {
       tm.register_thread(0);
       SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
-      run_gc();
+      // run_gc();
 
       auto pr = PageRank::page_rank_bs(tx, num_iterations, damping_factor);;
       auto external_ids = translate<double>(tx, pr);
@@ -374,7 +379,7 @@ namespace gfe::library {
       tm.register_thread(0);
       SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
-      run_gc();
+      // run_gc();
 
 
       auto clusters = WCC::gapbs_wcc(tx);
@@ -392,7 +397,7 @@ namespace gfe::library {
       tm.register_thread(0);
       SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
-      run_gc();
+      // run_gc();
 
       auto clusters = CDLP::teseo_cdlp(tx, max_iterations);
       auto external_ids = translate<uint64_t>(tx, clusters);
@@ -409,7 +414,7 @@ namespace gfe::library {
       tm.register_thread(0);
       SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
-      run_gc();
+      // run_gc();
 
       auto physical_src = tx.physical_id(source_vertex_id);
 
@@ -419,6 +424,7 @@ namespace gfe::library {
 
       tm.transactionCompleted(tx);
 
+  
       if (dump2file != nullptr) {
         save_result<double>(external_ids, dump2file);
       }
@@ -654,7 +660,7 @@ namespace gfe::library {
       tm.register_thread(0);
       SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
-      run_gc();
+      // run_gc();
 
 
       auto lcc_values = GFELCC::execute(tx);

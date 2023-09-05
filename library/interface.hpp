@@ -154,6 +154,10 @@ public:
     virtual bool has_weights() const;
 
     virtual bool create_epoch(uint64_t);
+
+    virtual void run_gc(){
+        
+    };
 };
 
 /**

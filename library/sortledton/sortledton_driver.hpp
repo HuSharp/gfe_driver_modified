@@ -72,8 +72,7 @@ namespace gfe::library {
           handle.close();
         }
 
-        void run_gc();
-
+        
 
     public:
 
@@ -211,6 +210,11 @@ namespace gfe::library {
         virtual bool can_be_validated() const;
 
         virtual bool create_epoch(uint64_t);
+
+
+        virtual void run_gc();
+
+
     };
 
 }

@@ -6,7 +6,7 @@
 
 #include <future>
 #include <chrono>
-
+#include <unistd.h>
 #if defined(HAVE_OPENMP)
   #include "omp.h"
 #endif
@@ -14,6 +14,8 @@
 #include "graphalytics.hpp"
 #include "aging2_experiment.hpp"
 #include "mixed_workload_result.hpp"
+#include "library/interface.hpp"
+
 
 namespace gfe::experiment {
 
@@ -39,9 +41,13 @@ namespace gfe::experiment {
                         omp_set_num_threads(m_read_threads);
                     }
 #endif
-
+      int i=1;
       while (m_aging_experiment.progress_so_far() < 0.9 && aging_result_future.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
-        m_graphalytics.execute();
+        (m_aging_experiment.m_library)->create_epoch(100+i);
+        cout<<"Current epochs: "<<100+i++<<endl;
+        // m_graphalytics.execute();
+        (m_aging_experiment.m_library)->run_gc();
+        sleep(10);
       }
 
       cout << "Waiting for aging experiment to finish" << endl;

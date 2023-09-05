@@ -44,7 +44,6 @@ class Aging2Experiment {
     friend class details::Aging2Master;
     friend class details::Aging2Worker;
 
-    std::shared_ptr<gfe::library::UpdateInterface> m_library; // the library to evaluate
     std::string m_path_log; // the path to the log file [graphlog] with the sequence of updates to perform
     uint64_t m_num_threads = 1; // set the number of threads to use
     uint64_t m_worker_granularity = 1024; // the granularity of a task for a worker, that is the number of contiguous operations (inserts/deletes) performed inside the threads between each invocation to the scheduler.
@@ -63,6 +62,8 @@ class Aging2Experiment {
 
     details::Aging2Master* m_master;
 public:
+        std::shared_ptr<gfe::library::UpdateInterface> m_library; // the library to evaluate
+
     // Instantiate the factory class
     Aging2Experiment();
     ~Aging2Experiment();

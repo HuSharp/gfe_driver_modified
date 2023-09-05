@@ -291,9 +291,10 @@ void Aging2Worker::main_load_edges(uint64_t* edges, uint64_t num_edges){
     double* __restrict weights = reinterpret_cast<double*>(destinations + num_edges);
 
     uniform_real_distribution<double> rndweight{0, m_master.parameters().m_max_weight}; // in [0, max_weight)
-
     for(uint64_t i = 0; i < num_edges; i++){
         if(static_cast<int>((sources[i] + destinations[i]) % modulo) == m_worker_id){
+            
+            // cout<<"loading edges\n";
             if(last->size() > last_max_sz){
                 last = new vector<graph::WeightedEdge>();
                 m_updates.append(last);
@@ -353,21 +354,33 @@ void Aging2Worker::graph_execute_batch_updates(graph::WeightedEdge* __restrict u
 
 template<bool with_latency>
 void Aging2Worker::graph_execute_batch_updates0(graph::WeightedEdge* __restrict updates, uint64_t num_updates){
-    for(uint64_t i = 0; i < num_updates; i++){
-        if(m_master.m_stop_experiment) break; // timeout, we're done
+    try{
+        for(uint64_t i = 0; i < num_updates; i++){
+            if(m_master.m_stop_experiment) break; // timeout, we're done
 
-        if(updates[i].m_weight >= 0){ // insertion
-            graph_insert_edge<with_latency>(updates[i]);
-        } else { // deletion
-            graph_remove_edge<with_latency>(updates[i].edge());
+            if(updates[i].m_weight >= 0){ // insertion
+                graph_insert_edge<with_latency>(updates[i]);
+            } else { // deletion
+                graph_remove_edge<with_latency>(updates[i].edge());
+            }
+
+            m_num_operations++;
         }
-
-        m_num_operations++;
     }
+        catch(...){
+            // for(int i=0;i<num_updates;i++)
+            //     cout<<updates[i].edge().source()<<" "<<updates[i].edge().destination()<<" "<<updates[i].m_weight<<endl;
+        }
+    
+
 }
 
 template<bool with_latency>
 void Aging2Worker::graph_insert_edge(graph::WeightedEdge edge){
+
+    // if(edge.source()!=1279655 && edge.destination()!=1279655)
+    //     return;
+
     if(!m_master.is_directed() && m_uniform(m_random) < 0.5) edge.swap_src_dst(); // noise
     COUT_DEBUG("edge: " << edge);
      m_is_in_library_code = true;
@@ -391,6 +404,8 @@ void Aging2Worker::graph_insert_edge(graph::WeightedEdge edge){
 
 template<bool with_latency>
 void Aging2Worker::graph_remove_edge(graph::Edge edge, bool force){
+    // if(edge.source()!=1279655 && edge.destination()!=1279655)
+    //     return;
     if(!m_master.is_directed() && m_uniform(m_random) < 0.5) edge.swap_src_dst(); // noise
     COUT_DEBUG("edge: " << edge);
     m_is_in_library_code = true;
@@ -399,7 +414,13 @@ void Aging2Worker::graph_remove_edge(graph::Edge edge, bool force){
         if(!force){
             m_library->remove_edge(edge);
         } else { // force = true
-            while( ! m_library->remove_edge(edge) ) /* nop */ ;
+            try{
+                while( ! m_library->remove_edge(edge) ) /* nop */ ;
+            }
+            catch(...){
+                cout<<"\n\nexception caught successfully\n\n";
+                throw std::exception();
+            }
         }
 
     } else { // measure the latency of the deletion
