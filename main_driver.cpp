@@ -111,49 +111,49 @@ static void run_standalone(int argc, char* argv[]){
 
         if(configuration().get_update_log().empty()){
 
-            impl_upd->create_epoch(100);
-            impl_upd->add_vertex(0);
-            for(int i=1;i<1000;i++)
-                impl_upd->add_vertex(i);
+            // impl_upd->create_epoch(100);
+            // impl_upd->add_vertex(0);
+            // for(int i=1;i<1000;i++)
+            //     impl_upd->add_vertex(i);
             
-            for(int i=300;i<1000;i++)
-            {
-                graph::WeightedEdge w{0, i, 100+i};
-                impl_upd->add_edge(w);
-            }
-            impl_upd->create_epoch(101);
-            for(int i=700;i<800;i++)
-            {
-                graph::WeightedEdge w{0, i, 100+i};
-                impl_upd->remove_edge(w);
-            }            
+            // for(int i=300;i<1000;i++)
+            // {
+            //     graph::WeightedEdge w{0, i, 100+i};
+            //     impl_upd->add_edge(w);
+            // }
+            // impl_upd->create_epoch(101);
+            // for(int i=700;i<800;i++)
+            // {
+            //     graph::WeightedEdge w{0, i, 100+i};
+            //     impl_upd->remove_edge(w);
+            // }            
 
-            impl_upd->create_epoch(102);
-            for(int i=750;i<800;i++)
-            {
-                graph::WeightedEdge w{0, i, 100+i};
-                impl_upd->add_edge(w);
-            }
-            impl_upd->create_epoch(103);
-            for(int i=700;i<750;i++)
-            {
-                graph::WeightedEdge w{0, i, 100+i};
-                impl_upd->add_edge(w);
-            }
+            // impl_upd->create_epoch(102);
+            // for(int i=750;i<800;i++)
+            // {
+            //     graph::WeightedEdge w{0, i, 100+i};
+            //     impl_upd->add_edge(w);
+            // }
+            // impl_upd->create_epoch(103);
+            // for(int i=700;i<750;i++)
+            // {
+            //     graph::WeightedEdge w{0, i, 100+i};
+            //     impl_upd->add_edge(w);
+            // }
             
-            for(int i=236;i<=299;i++)
-            {
-                graph::WeightedEdge w{0, i, 100+i};
-                impl_upd->add_edge(w);
-            }
+            // for(int i=236;i<=299;i++)
+            // {
+            //     graph::WeightedEdge w{0, i, 100+i};
+            //     impl_upd->add_edge(w);
+            // }
 
-            impl_upd->create_epoch(104);
+            // impl_upd->create_epoch(104);
             
-            graph::WeightedEdge w{0, 235, 100+235};
-                impl_upd->add_edge(w);
+            // graph::WeightedEdge w{0, 235, 100+235};
+            //     impl_upd->add_edge(w);
 
 
-            impl_upd->get_weight(0,2);
+            // impl_upd->get_weight(0,2);
 
             // for(int i=700;i<800;i++)
             // {
@@ -162,29 +162,31 @@ static void run_standalone(int argc, char* argv[]){
             // }
 
             
-        //     LOG("[driver] Using the graph " << path_graph);
-        //     auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
-        //     if (!configuration().is_timestamped_graph()) {
-        //       LOG("[driver] graph is not sorted by timestamp: permuting");
-        //       stream->permute();
-        //     } else {
-        //       LOG("[driver] graph is sorted by timestamp: no shuffling");
-        //     }
-        //     if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
+            LOG("[driver] Using the graph " << path_graph);
+            auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
+            if (!configuration().is_timestamped_graph()) {
+              LOG("[driver] graph is not sorted by timestamp: permuting");
+              stream->permute();
+            } else {
+              LOG("[driver] graph is sorted by timestamp: no shuffling");
+            }
+            if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
 
-        //     LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
+            LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
 
-        //     if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
+            if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
 
-        //     InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
-        //     experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
-        //     experiment.set_scheduler_granularity(1ull < 20);
-        //     experiment.execute();
-        //     if(configuration().has_database()) experiment.save();
+            InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
+            experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
+            experiment.set_scheduler_granularity(1ull < 20);
+            experiment.execute();
+            if(configuration().has_database()) experiment.save();
 
-        //   if(configuration().validate_inserts() && impl_upd->can_be_validated()){
-        //       num_validation_errors = validate_updates(impl_upd, stream);
-        //   }
+          if(configuration().validate_inserts() && impl_upd->can_be_validated()){
+              num_validation_errors = validate_updates(impl_upd, stream);
+          }
+
+        //   impl_ga->bfs(248533);
           
         }   else {
             if (configuration().is_mixed_workload()) {
@@ -258,8 +260,6 @@ static void run_standalone(int argc, char* argv[]){
                 auto stream = make_shared<graph::WeightedEdgeStream>(configuration().get_path_graph());
                 num_validation_errors = validate_updates(impl_upd, stream);
               }
-
-              cout<<impl_upd->num_vertices()<<endl;
             }
         }
     }

@@ -332,7 +332,7 @@ namespace gfe::library {
 
     void SortledtonDriver::bfs(uint64_t source_vertex_id, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
 
       // run_gc();
 
@@ -360,7 +360,7 @@ namespace gfe::library {
 
     void SortledtonDriver::pagerank(uint64_t num_iterations, double damping_factor, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
 
       // run_gc();
 
@@ -377,7 +377,7 @@ namespace gfe::library {
 
     void SortledtonDriver::wcc(const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
 
       // run_gc();
 
@@ -395,7 +395,7 @@ namespace gfe::library {
 
     void SortledtonDriver::cdlp(uint64_t max_iterations, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
 
       // run_gc();
 
@@ -412,7 +412,7 @@ namespace gfe::library {
 
     void SortledtonDriver::sssp(uint64_t source_vertex_id, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
 
       // run_gc();
 
@@ -658,7 +658,7 @@ namespace gfe::library {
 
     void SortledtonDriver::lcc(const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
 
       // run_gc();
 

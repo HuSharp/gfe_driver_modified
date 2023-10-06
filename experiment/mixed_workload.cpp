@@ -41,11 +41,12 @@ namespace gfe::experiment {
                         omp_set_num_threads(m_read_threads);
                     }
 #endif
-      int i=1;
+      int i=1; //(m_aging_experiment.m_library)->create_epoch(100+i);
       while (m_aging_experiment.progress_so_far() < 0.9 && aging_result_future.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
+        // if(i%5==0)
         (m_aging_experiment.m_library)->create_epoch(100+i);
         cout<<"Current epochs: "<<100+i++<<endl;
-        // m_graphalytics.execute();
+        m_graphalytics.execute();
         (m_aging_experiment.m_library)->run_gc();
         sleep(10);
       }
@@ -55,7 +56,10 @@ namespace gfe::experiment {
       cout << "Getting aging experiment results" << endl;
       auto aging_result = aging_result_future.get();
 
+      // (m_aging_experiment.m_library)->create_epoch(100+i+1);
+      // m_graphalytics.execute();
       return MixedWorkloadResult { aging_result, m_graphalytics };
+      
     }
 
 }

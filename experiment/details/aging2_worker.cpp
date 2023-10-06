@@ -227,7 +227,7 @@ void Aging2Worker::main_execute_updates(){
     // reports_per_ops only affects how often a report is saved in the db, not the report to the stdout
     const double reports_per_ops = m_master.parameters().m_num_reports_per_operations;
     int lastset_coeff = 0;
-
+    int epoch=1;
     for(uint64_t i = 0, end = m_updates.size(); i < end; i++){
         // if we're release the driver's memory, always fetch the first. Otherwise follow the index.
         vector<graph::WeightedEdge>* operations = m_updates[release_memory ? 0 : i];
@@ -259,7 +259,6 @@ void Aging2Worker::main_execute_updates(){
                 }
             }
 
-            // next iteration
             start = end;
         }
 
@@ -289,7 +288,6 @@ void Aging2Worker::main_load_edges(uint64_t* edges, uint64_t num_edges){
     uint64_t* __restrict sources = edges;
     uint64_t* __restrict destinations = sources + num_edges;
     double* __restrict weights = reinterpret_cast<double*>(destinations + num_edges);
-
     uniform_real_distribution<double> rndweight{0, m_master.parameters().m_max_weight}; // in [0, max_weight)
     for(uint64_t i = 0; i < num_edges; i++){
         if(static_cast<int>((sources[i] + destinations[i]) % modulo) == m_worker_id){
@@ -414,13 +412,9 @@ void Aging2Worker::graph_remove_edge(graph::Edge edge, bool force){
         if(!force){
             m_library->remove_edge(edge);
         } else { // force = true
-            try{
+            
                 while( ! m_library->remove_edge(edge) ) /* nop */ ;
-            }
-            catch(...){
-                cout<<"\n\nexception caught successfully\n\n";
-                throw std::exception();
-            }
+    
         }
 
     } else { // measure the latency of the deletion
