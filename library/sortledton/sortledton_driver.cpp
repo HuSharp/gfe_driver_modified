@@ -351,9 +351,9 @@ namespace gfe::library {
       // cout<<x<<" ";
       // cout<<endl;
 
-      if (dump2file != nullptr) {
-        save_bfs(external_ids, dump2file);
-      }
+      // if (dump2file != nullptr) {
+        // save_bfs(external_ids, "bfs_result_epoch_and_bfs.txt");
+      // }
       tm.deregister_thread(0);
     }
 
@@ -677,6 +677,7 @@ namespace gfe::library {
     }
 
     bool SortledtonDriver::create_epoch(uint64_t version){
+      ds->createEpoch(version);
       return tm.create_epoch(version);
     }
 

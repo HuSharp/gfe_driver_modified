@@ -156,8 +156,16 @@ bool Aging2Worker::wait(const chrono::time_point<chrono::steady_clock>& tp){
 void Aging2Worker::main_thread(){
     COUT_DEBUG("Worker started");
     concurrency::set_thread_name("Worker #" + to_string(m_worker_id));
-
+    if(m_worker_id<=4)
+    concurrency::pin_thread_to_cpu(m_worker_id-1);
+    else if(m_worker_id<=8)
+    concurrency::pin_thread_to_cpu(m_worker_id+3);
+    else if(m_worker_id<=12)
+    concurrency::pin_thread_to_cpu(m_worker_id+7);
+    else     concurrency::pin_thread_to_cpu(m_worker_id+11);
+    // concurrency::pin_thread_to_cpu(m_worker_id-1);
     m_library->on_thread_init(m_worker_id);
+    
 
     bool terminate = false;
     Task task; // current task
@@ -290,7 +298,7 @@ void Aging2Worker::main_load_edges(uint64_t* edges, uint64_t num_edges){
     double* __restrict weights = reinterpret_cast<double*>(destinations + num_edges);
     uniform_real_distribution<double> rndweight{0, m_master.parameters().m_max_weight}; // in [0, max_weight)
     for(uint64_t i = 0; i < num_edges; i++){
-        if(static_cast<int>((sources[i] + destinations[i]) % modulo) == m_worker_id){
+        if(static_cast<int>((sources[i] + destinations[i]) % modulo)+1 == m_worker_id && sources[i]%10 != 9){
             
             // cout<<"loading edges\n";
             if(last->size() > last_max_sz){
@@ -358,10 +366,12 @@ void Aging2Worker::graph_execute_batch_updates0(graph::WeightedEdge* __restrict 
 
             if(updates[i].m_weight >= 0){ // insertion
                 graph_insert_edge<with_latency>(updates[i]);
+            
             } else { // deletion
                 graph_remove_edge<with_latency>(updates[i].edge());
             }
-
+            if(m_master.m_measure.load())
+                m_num_operations_other++;
             m_num_operations++;
         }
     }
@@ -449,6 +459,10 @@ uint64_t Aging2Worker::num_deletions() const {
 
 uint64_t Aging2Worker::num_operations() const {
     return m_num_operations;
+}
+
+uint64_t Aging2Worker::num_operations_other() const {
+    return m_num_operations_other;
 }
 
 uint64_t Aging2Worker::memory_footprint() const {

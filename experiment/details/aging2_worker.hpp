@@ -49,7 +49,7 @@ class Aging2Worker {
     uint64_t* m_latency_deletions {nullptr};
     uint64_t m_num_edge_deletions {0}; // counter, total number of edge deletions to perform, as contained in the array m_updates
     std::atomic<uint64_t> m_num_operations = 0; // counter, total number of operations performed so far
-
+    std::atomic<uint64_t> m_num_operations_other = 0;
     std::atomic<bool> m_is_in_library_code = false;
 
     enum class TaskOp { IDLE, START, STOP, LOAD_EDGES, EXECUTE_UPDATES, REMOVE_VERTICES, SET_ARRAY_LATENCIES };
@@ -135,6 +135,8 @@ public:
 
     // Total number of operations performed so far
     uint64_t num_operations() const;
+
+    uint64_t num_operations_other() const;
 
     // Rough estimate of the memory footprint consumed by this worker, in bytes
     uint64_t memory_footprint() const;

@@ -110,81 +110,97 @@ static void run_standalone(int argc, char* argv[]){
         if(impl_upd.get() == nullptr){ ERROR("The library `" << configuration().get_library_name() << "' does not support updates"); }
 
         if(configuration().get_update_log().empty()){
-
-            // impl_upd->create_epoch(100);
-            // impl_upd->add_vertex(0);
-            // for(int i=1;i<1000;i++)
-            //     impl_upd->add_vertex(i);
-            
-            // for(int i=300;i<1000;i++)
-            // {
-            //     graph::WeightedEdge w{0, i, 100+i};
-            //     impl_upd->add_edge(w);
-            // }
-            // impl_upd->create_epoch(101);
-            // for(int i=700;i<800;i++)
-            // {
-            //     graph::WeightedEdge w{0, i, 100+i};
-            //     impl_upd->remove_edge(w);
-            // }            
-
-            // impl_upd->create_epoch(102);
-            // for(int i=750;i<800;i++)
-            // {
-            //     graph::WeightedEdge w{0, i, 100+i};
-            //     impl_upd->add_edge(w);
-            // }
-            // impl_upd->create_epoch(103);
-            // for(int i=700;i<750;i++)
-            // {
-            //     graph::WeightedEdge w{0, i, 100+i};
-            //     impl_upd->add_edge(w);
-            // }
-            
-            // for(int i=236;i<=299;i++)
-            // {
-            //     graph::WeightedEdge w{0, i, 100+i};
-            //     impl_upd->add_edge(w);
-            // }
-
-            // impl_upd->create_epoch(104);
-            
-            // graph::WeightedEdge w{0, 235, 100+235};
-            //     impl_upd->add_edge(w);
-
-
-            // impl_upd->get_weight(0,2);
-
-            // for(int i=700;i<800;i++)
-            // {
-            //     if(!impl_upd->has_edge(0,i))
-            //         cout<<"somethings wrong \n";
-            // }
-
-            
-            LOG("[driver] Using the graph " << path_graph);
-            auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
-            if (!configuration().is_timestamped_graph()) {
-              LOG("[driver] graph is not sorted by timestamp: permuting");
-              stream->permute();
-            } else {
-              LOG("[driver] graph is sorted by timestamp: no shuffling");
+            impl_upd->create_epoch(50);
+            int numVertices = 2048;
+            impl_upd->add_vertex(100);
+            for(int i=0;i<numVertices;i++){
+                bool ret  = impl_upd->add_vertex(200+i);
+                ret = impl_upd->has_vertex(200+i);
+                if(!ret) cout<<"vertex "<<200+i<<" could not be inserted"<<endl;
             }
-            if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
 
-            LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
+            
+            for(int i=0;i<numVertices;i++){
+                graph::WeightedEdge e(100, 200+i, 300+i);
+                bool ret = impl_upd->add_edge(e);
+                cout<<"inserted edge "<<200+i<<endl;
+            }
 
-            if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
+            // impl_upd->get_weight(100,201);
+            
+            for(int i=0;i<numVertices;i+=2){
+                graph::Edge e(100,200+i);
+                impl_upd->remove_edge(e);
+                cout<<"removed edge :" <<200+i<<endl;
+            }
 
-            InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
-            experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
-            experiment.set_scheduler_granularity(1ull < 20);
-            experiment.execute();
-            if(configuration().has_database()) experiment.save();
+            // impl_upd->get_weight(100,201);
+            
 
-          if(configuration().validate_inserts() && impl_upd->can_be_validated()){
-              num_validation_errors = validate_updates(impl_upd, stream);
-          }
+            // graph::Edge e(100,1858);
+            //     impl_upd->remove_edge(e);
+            //     cout<<"removed edge :" <<1858<<endl;
+            impl_upd->get_weight(100,201);
+
+            for(int i=0;i<numVertices;i+=2){
+                graph::WeightedEdge e(100, 200+i, 300+i);
+                bool ret = impl_upd->add_edge(e);
+                cout<<"inserted edge "<<200+i<<endl;
+            }
+
+                        // impl_upd->get_weight(100,201);
+
+
+            for(int i=0;i<numVertices;i++){
+                double ans = impl_upd->get_weight(100,200+i);
+                cout<<ans<<endl;
+            }
+
+            //     cout<<"-----------\n";
+            
+            // for(int j=0;j<4;j++){
+
+            //     for(int i=0;i<numVertices;i+=100){
+            //         graph::Edge e(100, 200+i);
+            //         impl_upd->remove_edge(e);
+            //     }
+
+            //     for(int i=0;i<numVertices;i+=100){
+            //         graph::WeightedEdge e(100, 200+i, 300+i);
+            //         impl_upd->add_edge(e);
+            //     }
+
+            //     for(int i=0;i<8;i++)
+            //     double ans = impl_upd->get_weight(100,201);
+
+            //     cout<<j<<" -----------\n";
+            // }
+
+
+            
+        //     LOG("[driver] Using the graph " << path_graph);
+        //     auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
+        //     if (!configuration().is_timestamped_graph()) {
+        //       LOG("[driver] graph is not sorted by timestamp: permuting");
+        //       stream->permute();
+        //     } else {
+        //       LOG("[driver] graph is sorted by timestamp: no shuffling");
+        //     }
+        //     if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
+
+        //     LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
+
+        //     if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
+
+        //     InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
+        //     experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
+        //     experiment.set_scheduler_granularity(1ull < 20);
+        //     experiment.execute();
+        //     if(configuration().has_database()) experiment.save();
+
+        //   if(configuration().validate_inserts() && impl_upd->can_be_validated()){
+        //       num_validation_errors = validate_updates(impl_upd, stream);
+        //   }
 
         //   impl_ga->bfs(248533);
           
@@ -219,7 +235,7 @@ static void run_standalone(int argc, char* argv[]){
               if(properties.bfs.m_enabled == true && properties.sssp.m_enabled == false){
                 LOG("[driver] Enabling SSSP with random weights, source vertex: " << random_vertex);
                 properties.sssp.m_enabled = true;
-                properties.sssp.m_source_vertex = random_vertex;
+                properties.sssp.m_source_vertex = 248533;
               }
 
               configuration().blacklist(properties);
@@ -229,6 +245,7 @@ static void run_standalone(int argc, char* argv[]){
               auto result = experiment.execute();
               cout << "Saving result" << endl;
               if (configuration().has_database()) result.save(configuration().db());
+              exp_seq.report(false);
               cout << "Done saving" << endl;
             } else {
               LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE));
@@ -252,7 +269,7 @@ static void run_standalone(int argc, char* argv[]){
               experiment.set_cooloff(chrono::seconds{configuration().get_aging_cooloff_seconds()});
 
               auto result = experiment.execute();
-              if (configuration().has_database()) result.save(configuration().db());
+            //   if (configuration().has_database()) result.save(configuration().db());
               random_vertex = result.get_random_vertex_id();
 
               if (configuration().validate_inserts() && impl_upd->can_be_validated()) {

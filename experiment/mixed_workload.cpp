@@ -16,6 +16,7 @@
 #include "mixed_workload_result.hpp"
 #include "library/interface.hpp"
 
+#include "common/timer.hpp"
 
 namespace gfe::experiment {
 
@@ -41,23 +42,54 @@ namespace gfe::experiment {
                         omp_set_num_threads(m_read_threads);
                     }
 #endif
-      int i=1; //(m_aging_experiment.m_library)->create_epoch(100+i);
+      int i=1; 
+      using clock = std::chrono::steady_clock;
+
+      clock::time_point m_t0 = clock::now(); // start time
+      (m_aging_experiment.m_library)->create_epoch(100+i);
+          cout<<"Current epochs: "<<100+i++<<endl;
+      
+      auto lembda = [&](){
+        clock::time_point m_t0 = clock::now();
+        while(1){
+          clock::time_point m_t1 = clock::now();
+          auto seconds = std::chrono::duration_cast<std::chrono::seconds>(m_t1 - m_t0);
+          long long dur = seconds.count();
+          sleep(1);
+          (m_aging_experiment.m_library)->run_gc();
+          // if(dur > 610)
+          //   break;
+        }
+      };
+          // lembda();
+          std::thread gcthread(lembda);
+
       while (m_aging_experiment.progress_so_far() < 0.9 && aging_result_future.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
         // if(i%5==0)
-        (m_aging_experiment.m_library)->create_epoch(100+i);
-        cout<<"Current epochs: "<<100+i++<<endl;
-        m_graphalytics.execute();
-        (m_aging_experiment.m_library)->run_gc();
-        sleep(10);
+          clock::time_point m_t1 = clock::now();
+          auto seconds = std::chrono::duration_cast<std::chrono::seconds>(m_t1 - m_t0);
+          long long dur = seconds.count();
+          if(dur > 5){
+            (m_aging_experiment.m_library)->create_epoch(100+i);
+            cout<<"Current epochs: "<<100+i++<<endl;
+            m_t0 = clock::now();
+          }
+          // // // cout<<"\n\n"<<dur<<endl<<endl;
+          // sleep(1);
+          m_graphalytics.execute();
+          // (m_aging_experiment.m_library)->run_gc();
+          // if(i>4) break;
       }
 
       cout << "Waiting for aging experiment to finish" << endl;
       aging_result_future.wait();
       cout << "Getting aging experiment results" << endl;
       auto aging_result = aging_result_future.get();
-
+      // sleep(20);
       // (m_aging_experiment.m_library)->create_epoch(100+i+1);
       // m_graphalytics.execute();
+      m_graphalytics.report(false);
+      gcthread.join();
       return MixedWorkloadResult { aging_result, m_graphalytics };
       
     }

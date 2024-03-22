@@ -19,10 +19,10 @@ namespace gfe::experiment {
 
     void MixedWorkloadResult::save(common::Database* db) {
       cout << "Start saving results" << endl;
-      m_graphalytics.report(true);
-      cout << "Saved graphalytics" << endl;
-      m_aging_result.save(db);
-      cout << "Saved aging" << endl;
-      cout << "Saved aging" << endl;
+      m_graphalytics.report(false);
+      // cout << "Saved graphalytics" << endl;
+      // m_aging_result.save(db);
+      // cout << "Saved aging" << endl;
+      // cout << "Saved aging" << endl;
     }
 }

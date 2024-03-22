@@ -342,32 +342,32 @@ std::chrono::microseconds GraphalyticsSequential::execute(){
 void GraphalyticsSequential::report(bool save_in_db){
     if(!m_exec_bfs.empty()){
         ExecStatistics stats { m_exec_bfs };
-        cout << ">> BFS " << stats << "\n";
+        cerr << ">> BFS " << stats << "\n";
         if(save_in_db) stats.save("bfs");
     }
     if(!m_exec_cdlp.empty()){
         ExecStatistics stats { m_exec_cdlp };
-        cout << ">> CDLP " << stats << "\n";
+        cerr << ">> CDLP " << stats << "\n";
         if(save_in_db) stats.save("cdlp");
     }
     if(!m_exec_lcc.empty()){
         ExecStatistics stats { m_exec_lcc };
-        cout << ">> LCC " << stats << "\n";
+        cerr << ">> LCC " << stats << "\n";
         if(save_in_db) stats.save("lcc");
     }
     if(!m_exec_pagerank.empty()){
         ExecStatistics stats { m_exec_pagerank };
-        cout << ">> PageRank " << stats << "\n";
+        cerr << ">> PageRank " << stats << "\n";
         if(save_in_db) stats.save("pagerank");
     }
     if(!m_exec_sssp.empty()){
         ExecStatistics stats { m_exec_sssp };
-        cout << ">> SSSP " << stats << "\n";
+        cerr << ">> SSSP " << stats << "\n";
         if(save_in_db) stats.save("sssp");
     }
     if(!m_exec_wcc.empty()){
         ExecStatistics stats { m_exec_wcc };
-        cout << ">> WCC " << stats << "\n";
+        cerr << ">> WCC " << stats << "\n";
         if(save_in_db) stats.save("wcc");
     }
 
@@ -395,9 +395,9 @@ void GraphalyticsSequential::report(bool save_in_db){
     	}
 
     	if(num_validation_errors == 0){
-    	    cout << ">> All executions succeeded the validation (" << m_validate_results.size() << " validation runs)" << endl;
+    	    cerr << ">> All executions succeeded the validation (" << m_validate_results.size() << " validation runs)" << endl;
     	} else {
-    	    cout << ">> Executions that failed the validation: " << num_validation_errors << " out of " << m_validate_results.size() << " validation runs" << endl;
+    	    cerr << ">> Executions that failed the validation: " << num_validation_errors << " out of " << m_validate_results.size() << " validation runs" << endl;
     	}
     }
 }

@@ -39,7 +39,7 @@ struct GraphalyticsAlgorithms {
     } bfs;
     struct {
         bool m_enabled = false;
-        uint64_t m_max_iterations = 0;
+        uint64_t m_max_iterations = 100;
     } cdlp;
     struct {
         bool m_enabled = false;
@@ -47,11 +47,11 @@ struct GraphalyticsAlgorithms {
     struct {
         bool m_enabled = false;
         double m_damping_factor = 0.85; // default
-        double m_num_iterations = 0;
+        double m_num_iterations = 10;
     } pagerank;
     struct {
         bool m_enabled = false;
-        uint64_t m_source_vertex = 0;
+        uint64_t m_source_vertex = 248533;
     } sssp;
     struct {
         bool m_enabled = false;

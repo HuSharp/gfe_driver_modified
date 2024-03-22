@@ -64,7 +64,7 @@ extern mutex _log_mutex [[maybe_unused]];
  *****************************************************************************/
 namespace gfe::experiment::details {
 
-Aging2Master::Aging2Master(const Aging2Experiment& parameters) :
+Aging2Master::Aging2Master(Aging2Experiment& parameters) :
     m_parameters(parameters),
     m_is_directed(m_parameters.m_library->is_directed()),
     m_results(parameters) {
@@ -100,7 +100,7 @@ void Aging2Master::init_workers() {
     LOG("[Aging2] Initialising " << parameters().m_num_threads << " worker threads ... ");
 
     m_workers.reserve(parameters().m_num_threads);
-    for(uint64_t worker_id = 1; worker_id < parameters().m_num_threads; worker_id++){
+    for(uint64_t worker_id = 1; worker_id <= parameters().m_num_threads; worker_id++){
         m_workers.push_back ( new Aging2Worker(*this, worker_id) );
     }
 
@@ -258,6 +258,16 @@ uint64_t Aging2Master::num_edges_final_graph() const {
 }
 
 void Aging2Master::wait_and_record() {
+    chrono::seconds progress_check_interval( 1 );
+    while (true) {
+        if (m_parameters.progress_so_far() > 0.1) { // The graph reached its final size
+          break;
+        }
+        this_thread::sleep_for( progress_check_interval ) ;
+      
+    }
+
+    m_measure.store(true);
     bool done = false;
     m_results.m_progress.clear();
     const bool measure_memfp = parameters().m_memfp;
@@ -376,15 +386,31 @@ void Aging2Master::store_results(){
 
 void Aging2Master::log_num_vtx_edges(){
     scoped_lock<mutex> lock(_log_mutex);
-    cout << "[Aging2] Number of stored vertices: " << m_results.m_num_vertices_final_graph << " [match: ";
-    if(m_results.m_num_vertices_load == m_results.m_num_vertices_final_graph){ cout << "yes"; } else {
-        cout << "no, expected " << m_results.m_num_vertices_load;
+    cerr << "[Aging2] Number of stored vertices: " << m_results.m_num_vertices_final_graph << " [match: ";
+    if(m_results.m_num_vertices_load == m_results.m_num_vertices_final_graph){ cerr << "yes"; } else {
+        cerr << "no, expected " << m_results.m_num_vertices_load;
     }
-    cout << "], number of stored edges: " << m_results.m_num_edges_final_graph << " [match: ";
-    if(m_results.m_num_edges_load == m_results.m_num_edges_final_graph){ cout << "yes"; } else {
-        cout << "no, expected " << m_results.m_num_edges_load;
+    cerr << "], number of stored edges: " << m_results.m_num_edges_final_graph << " [match: ";
+    if(m_results.m_num_edges_load == m_results.m_num_edges_final_graph){ cerr << "yes"; } else {
+        cerr << "no, expected " << m_results.m_num_edges_load;
     }
-    cout << "]" << endl;
+    cerr << "]" << endl;
+    long long num_ops = 0;
+    long long num_ops_other = 0;
+    long long num_insertions = 0;
+    long long num_deletions = 0;
+    cerr<<"workers present: "<<m_workers.size()<<endl;
+    for(int i=0;i<m_workers.size();i++)
+        num_ops_other += m_workers[i]->num_operations_other();
+    for(int i=0;i<m_workers.size();i++)
+        num_ops += m_workers[i]->num_operations();
+    for(int i=0;i<m_workers.size();i++)
+        num_insertions += m_workers[i]->num_insertions();
+    for(int i=0;i<m_workers.size();i++)
+        num_deletions += m_workers[i]->num_deletions();
+    cerr<<"total number of operations: "<<num_ops<<endl;
+    cerr<<"total number of operations other: "<<num_ops_other<<endl;
+    cerr<<"total number of edges to be stored: "<<num_insertions - num_deletions<<endl; 
 }
 
 void Aging2Master::set_random_vertex_id(uint64_t* edges, uint64_t num_edges){

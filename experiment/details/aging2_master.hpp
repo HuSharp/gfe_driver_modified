@@ -36,7 +36,7 @@ namespace gfe::experiment::details {
 class Aging2Master {
     friend class Aging2Worker;
 
-    const Aging2Experiment& m_parameters;
+    Aging2Experiment& m_parameters;
     const bool m_is_directed; // is the graph directed?
     std::vector<Aging2Worker*> m_workers; // pool of workers
     std::atomic<int64_t> m_num_operations_performed = 0; // current number of operations performed so far
@@ -98,7 +98,7 @@ class Aging2Master {
     uint64_t memory_footprint() const;
 
 public:
-    Aging2Master(const Aging2Experiment& parameters);
+    Aging2Master(Aging2Experiment& parameters);
 
     // Destructor
     ~Aging2Master();
@@ -119,6 +119,8 @@ public:
     const Aging2Experiment& parameters() const { return m_parameters; }
 
     double progress_so_far() const;
+
+    std::atomic<bool> m_measure;
 };
 
 }
