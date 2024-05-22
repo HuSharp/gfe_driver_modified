@@ -111,99 +111,104 @@ static void run_standalone(int argc, char* argv[]){
 
         if(configuration().get_update_log().empty()){
             impl_upd->create_epoch(50);
-            int numVertices = 2048;
-            impl_upd->add_vertex(100);
-            for(int i=0;i<numVertices;i++){
-                bool ret  = impl_upd->add_vertex(200+i);
-                ret = impl_upd->has_vertex(200+i);
-                if(!ret) cout<<"vertex "<<200+i<<" could not be inserted"<<endl;
-            }
-
-            
-            for(int i=0;i<numVertices;i++){
-                graph::WeightedEdge e(100, 200+i, 300+i);
-                bool ret = impl_upd->add_edge(e);
-                cout<<"inserted edge "<<200+i<<endl;
-            }
-
-            // impl_upd->get_weight(100,201);
-            
-            for(int i=0;i<numVertices;i+=2){
-                graph::Edge e(100,200+i);
-                impl_upd->remove_edge(e);
-                cout<<"removed edge :" <<200+i<<endl;
-            }
-
-            // impl_upd->get_weight(100,201);
-            
-
-            // graph::Edge e(100,1858);
-            //     impl_upd->remove_edge(e);
-            //     cout<<"removed edge :" <<1858<<endl;
-            impl_upd->get_weight(100,201);
-
-            for(int i=0;i<numVertices;i+=2){
-                graph::WeightedEdge e(100, 200+i, 300+i);
-                bool ret = impl_upd->add_edge(e);
-                cout<<"inserted edge "<<200+i<<endl;
-            }
-
-                        // impl_upd->get_weight(100,201);
-
-
-            for(int i=0;i<numVertices;i++){
-                double ans = impl_upd->get_weight(100,200+i);
-                cout<<ans<<endl;
-            }
-
-            //     cout<<"-----------\n";
-            
-            // for(int j=0;j<4;j++){
-
-            //     for(int i=0;i<numVertices;i+=100){
-            //         graph::Edge e(100, 200+i);
-            //         impl_upd->remove_edge(e);
-            //     }
-
-            //     for(int i=0;i<numVertices;i+=100){
-            //         graph::WeightedEdge e(100, 200+i, 300+i);
-            //         impl_upd->add_edge(e);
-            //     }
-
-            //     for(int i=0;i<8;i++)
-            //     double ans = impl_upd->get_weight(100,201);
-
-            //     cout<<j<<" -----------\n";
+            // int numVertices = 2048;
+            // impl_upd->add_vertex(100);
+            // for(int i=0;i<numVertices;i++){
+            //     bool ret  = impl_upd->add_vertex(200+i);
+            //     ret = impl_upd->has_vertex(200+i);
+            //     if(!ret) cout<<"vertex "<<200+i<<" could not be inserted"<<endl;
             // }
 
+            
+            // for(int i=0;i<numVertices;i++){
+            //     graph::WeightedEdge e(100, 200+i, 300+i);
+            //     bool ret = impl_upd->add_edge(e);
+            //     cout<<"inserted edge "<<200+i<<endl;
+            // }
+
+            // // impl_upd->get_weight(100,201);
+            
+            // for(int i=0;i<numVertices;i+=2){
+            //     graph::Edge e(100,200+i);
+            //     impl_upd->remove_edge(e);
+            //     cout<<"removed edge :" <<200+i<<endl;
+            // }
+
+            // // impl_upd->get_weight(100,201);
+            
+
+            // // graph::Edge e(100,1858);
+            // //     impl_upd->remove_edge(e);
+            // //     cout<<"removed edge :" <<1858<<endl;
+            // impl_upd->get_weight(100,201);
+
+            // for(int i=0;i<numVertices;i+=2){
+            //     graph::WeightedEdge e(100, 200+i, 300+i);
+            //     bool ret = impl_upd->add_edge(e);
+            //     cout<<"inserted edge "<<200+i<<endl;
+            // }
+
+            //             // impl_upd->get_weight(100,201);
+
+
+            // for(int i=0;i<numVertices;i++){
+            //     double ans = impl_upd->get_weight(100,200+i);
+            //     cout<<ans<<endl;
+            // }
+
+            // //     cout<<"-----------\n";
+            
+            // // for(int j=0;j<4;j++){
+
+            // //     for(int i=0;i<numVertices;i+=100){
+            // //         graph::Edge e(100, 200+i);
+            // //         impl_upd->remove_edge(e);
+            // //     }
+
+            // //     for(int i=0;i<numVertices;i+=100){
+            // //         graph::WeightedEdge e(100, 200+i, 300+i);
+            // //         impl_upd->add_edge(e);
+            // //     }
+
+            // //     for(int i=0;i<8;i++)
+            // //     double ans = impl_upd->get_weight(100,201);
+
+            // //     cout<<j<<" -----------\n";
+            // // }
+
 
             
-        //     LOG("[driver] Using the graph " << path_graph);
-        //     auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
-        //     if (!configuration().is_timestamped_graph()) {
-        //       LOG("[driver] graph is not sorted by timestamp: permuting");
-        //       stream->permute();
-        //     } else {
-        //       LOG("[driver] graph is sorted by timestamp: no shuffling");
-        //     }
-        //     if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
+            LOG("[driver] Using the graph " << path_graph);
+            auto stream = make_shared<graph::WeightedEdgeStream> ( configuration().get_path_graph() );
+            if (!configuration().is_timestamped_graph()) {
+              LOG("[driver] graph is not sorted by timestamp: permuting");
+              stream->permute();
+            } else {
+              LOG("[driver] graph is sorted by timestamp: no shuffling");
+            }
+            if(stream->num_edges() > 0) random_vertex = stream->get(0).m_source;
 
-        //     LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
+            LOG("[driver] Number of concurrent threads: " << configuration().num_threads(THREADS_WRITE) );
 
-        //     if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
+            if(configuration().measure_latency()) ERROR("[driver] InsertOnly, support for latency measurements removed");
 
-        //     InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
-        //     experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
-        //     experiment.set_scheduler_granularity(1ull < 20);
-        //     experiment.execute();
-        //     if(configuration().has_database()) experiment.save();
+            InsertOnly experiment { impl_upd, stream, configuration().num_threads(THREADS_WRITE) };
+            experiment.set_build_frequency(chrono::milliseconds{ configuration().get_build_frequency() });
+            experiment.set_scheduler_granularity(1ull < 20);
+            experiment.execute();
+            if(configuration().has_database()) experiment.save();
 
-        //   if(configuration().validate_inserts() && impl_upd->can_be_validated()){
-        //       num_validation_errors = validate_updates(impl_upd, stream);
-        //   }
-
-        //   impl_ga->bfs(248533);
-          
+          if(configuration().validate_inserts() && impl_upd->can_be_validated()){
+              num_validation_errors = validate_updates(impl_upd, stream);
+          }
+            Timer m;
+            omp_set_num_threads(32);
+          m.start();
+          impl_ga->bfs(248533, "bfs_results.txt");
+        
+          m.stop();
+            cout<<"BFS completed in "<<m<<" seconds\n";
+            exit(0);
         }   else {
             if (configuration().is_mixed_workload()) {
               LOG("[driver] Number of write threads: " << configuration().num_threads(THREADS_WRITE));

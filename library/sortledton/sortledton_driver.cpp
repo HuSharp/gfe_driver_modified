@@ -332,7 +332,7 @@ namespace gfe::library {
 
     void SortledtonDriver::bfs(uint64_t source_vertex_id, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, false);
 
       // run_gc();
 
@@ -351,16 +351,16 @@ namespace gfe::library {
       // cout<<x<<" ";
       // cout<<endl;
 
-      // if (dump2file != nullptr) {
-        // save_bfs(external_ids, "bfs_result_epoch_and_bfs.txt");
-      // }
+      if (dump2file != nullptr) {
+        save_bfs(external_ids, dump2file);
+      }
       tm.deregister_thread(0);
     }
 
 
     void SortledtonDriver::pagerank(uint64_t num_iterations, double damping_factor, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, false);
 
       // run_gc();
 
@@ -377,7 +377,7 @@ namespace gfe::library {
 
     void SortledtonDriver::wcc(const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, false);
 
       // run_gc();
 
@@ -395,7 +395,7 @@ namespace gfe::library {
 
     void SortledtonDriver::cdlp(uint64_t max_iterations, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, false);
 
       // run_gc();
 
@@ -412,7 +412,7 @@ namespace gfe::library {
 
     void SortledtonDriver::sssp(uint64_t source_vertex_id, const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, false);
 
       // run_gc();
 
@@ -658,7 +658,7 @@ namespace gfe::library {
 
     void SortledtonDriver::lcc(const char *dump2file) {
       tm.register_thread(0);
-      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, true);
+      SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false, false);
 
       // run_gc();
 
