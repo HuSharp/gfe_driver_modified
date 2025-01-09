@@ -15,18 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
-
 #include <iostream>
+
 #include "common/error.hpp"
 #include "common/filesystem.hpp"
 #include "graph/edge.hpp"
 #include "graph/edge_stream.hpp"
+#include "gtest/gtest.h"
 
 using namespace gfe::graph;
 using namespace std;
 
-TEST(EdgeStream, Sanity) {
+TEST(EdgeStream, Sanity)
+{
     WeightedEdgeStream stream(common::filesystem::directory_executable() + "/graphs/weighted_no_comments.wel");
 
     ASSERT_EQ(stream.num_edges(), 10);
@@ -86,13 +87,13 @@ TEST(EdgeStream, Sanity) {
     WeightedEdgeStream permuted(common::filesystem::directory_executable() + "/graphs/weighted_no_comments.wel");
     permuted.permute();
     ASSERT_EQ(stream.num_edges(), permuted.num_edges());
-    for(int i = 0, end = stream.num_edges(); i < end; i++){
+    for (int i = 0, end = stream.num_edges(); i < end; i++)
+    {
         bool found = false;
-        for(int j = 0; j < end && !found; j++){
+        for (int j = 0; j < end && !found; j++)
+        {
             found = (stream[i] == permuted[j]);
         }
         ASSERT_EQ(found, true);
     }
 }
-
-

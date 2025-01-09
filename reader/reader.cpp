@@ -17,27 +17,30 @@
 
 #include "reader.hpp"
 
+#include "binary_reader.hpp"
 #include "dimacs9_reader.hpp"
 #include "format.hpp"
 #include "graphalytics_reader.hpp"
 #include "graphlog_reader.hpp"
 #include "metis_reader.hpp"
 #include "plain_reader.hpp"
-#include "binary_reader.hpp"
 
 #undef CURRENT_ERROR_TYPE
 #define CURRENT_ERROR_TYPE ::gfe::reader::ReaderError
 
 using namespace std;
 
-namespace gfe::reader {
+namespace gfe::reader
+{
 
-Reader::Reader(){ }
-Reader::~Reader(){ }
+Reader::Reader() {}
+Reader::~Reader() {}
 
-std::unique_ptr<Reader> Reader::open(const std::string& path){
+std::unique_ptr<Reader> Reader::open(const std::string & path)
+{
     auto format = get_graph_format(path);
-    switch(format){
+    switch (format)
+    {
     case Format::DIMACS9:
         return make_unique<Dimacs9Reader>(path);
     case Format::GRAPHLOG:
@@ -57,5 +60,4 @@ std::unique_ptr<Reader> Reader::open(const std::string& path){
     }
 }
 
-} // namespace reader
-
+} // namespace gfe::reader

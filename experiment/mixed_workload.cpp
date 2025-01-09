@@ -4,52 +4,62 @@
 
 #include "mixed_workload.hpp"
 
-#include <future>
 #include <chrono>
+#include <future>
 
 #if defined(HAVE_OPENMP)
-  #include "omp.h"
+#include "omp.h"
 #endif
 
-#include "graphalytics.hpp"
 #include "aging2_experiment.hpp"
+#include "graphalytics.hpp"
 #include "mixed_workload_result.hpp"
 
-namespace gfe::experiment {
+namespace gfe::experiment
+{
 
-    using namespace std;
+using namespace std;
 
-    MixedWorkloadResult MixedWorkload::execute() {
-      auto aging_result_future = std::async(std::launch::async, &Aging2Experiment::execute, &m_aging_experiment);
+MixedWorkloadResult MixedWorkload::execute()
+{
+    auto aging_result_future = std::async(std::launch::async, &Aging2Experiment::execute, &m_aging_experiment);
 
-      chrono::seconds progress_check_interval( 1 );
-      this_thread::sleep_for( progress_check_interval );  // Poor mans synchronization to ensure AgingExperiment was able to setup the master etc
-      while (true) {
-        if (m_aging_experiment.progress_so_far() > 0.1 || aging_result_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // The graph reached its final size
-          break;
+    chrono::seconds progress_check_interval(1);
+    this_thread::sleep_for(progress_check_interval); // Poor mans synchronization to ensure
+        // AgingExperiment was able to setup the master
+        // etc
+    while (true)
+    {
+        if (m_aging_experiment.progress_so_far() > 0.1
+            || aging_result_future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        { // The graph reached its final size
+            break;
         }
-        this_thread::sleep_for( progress_check_interval ) ;
-      }
-      cout << "Graph reached final size, executing graphaltyics now" << endl;
+        this_thread::sleep_for(progress_check_interval);
+    }
+    cout << "Graph reached final size, executing graphaltyics now" << endl;
 
-      // TODO change this to also work for LCC, generally this solution is very ugly
+    // TODO change this to also work for LCC, generally this solution is very ugly
 #if defined(HAVE_OPENMP)
-      if(m_read_threads != 0 ){
-                        cout << "[driver] OpenMP, number of threads for the Graphalytics suite: " << m_read_threads << endl;
-                        omp_set_num_threads(m_read_threads);
-                    }
+    if (m_read_threads != 0)
+    {
+        cout << "[driver] OpenMP, number of threads for the Graphalytics suite: " << m_read_threads << endl;
+        omp_set_num_threads(m_read_threads);
+    }
 #endif
 
-      while (m_aging_experiment.progress_so_far() < 0.9 && aging_result_future.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
+    while (m_aging_experiment.progress_so_far() < 0.9
+           && aging_result_future.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+    {
         m_graphalytics.execute();
-      }
-
-      cout << "Waiting for aging experiment to finish" << endl;
-      aging_result_future.wait();
-      cout << "Getting aging experiment results" << endl;
-      auto aging_result = aging_result_future.get();
-
-      return MixedWorkloadResult { aging_result, m_graphalytics };
     }
 
+    cout << "Waiting for aging experiment to finish" << endl;
+    aging_result_future.wait();
+    cout << "Getting aging experiment results" << endl;
+    auto aging_result = aging_result_future.get();
+
+    return MixedWorkloadResult{aging_result, m_graphalytics};
 }
+
+} // namespace gfe::experiment

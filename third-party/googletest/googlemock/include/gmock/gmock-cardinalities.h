@@ -27,7 +27,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 // Google Mock - a framework for writing C++ mock classes.
 //
 // This file implements some commonly used cardinalities.  More
@@ -40,14 +39,16 @@
 #define GMOCK_INCLUDE_GMOCK_GMOCK_CARDINALITIES_H_
 
 #include <limits.h>
-#include <ostream>  // NOLINT
+
+#include <ostream> // NOLINT
+
 #include "gmock/internal/gmock-port.h"
 #include "gtest/gtest.h"
 
-GTEST_DISABLE_MSC_WARNINGS_PUSH_(4251 \
-/* class A needs to have dll-interface to be used by clients of class B */)
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4251 /* class A needs to have dll-interface to be used by clients of class B */)
 
-namespace testing {
+namespace testing
+{
 
 // To implement a cardinality Foo, define:
 //   1. a class FooCardinality that implements the
@@ -60,23 +61,24 @@ namespace testing {
 // management as Cardinality objects can now be copied like plain values.
 
 // The implementation of a cardinality.
-class CardinalityInterface {
- public:
-  virtual ~CardinalityInterface() {}
+class CardinalityInterface
+{
+public:
+    virtual ~CardinalityInterface() {}
 
-  // Conservative estimate on the lower/upper bound of the number of
-  // calls allowed.
-  virtual int ConservativeLowerBound() const { return 0; }
-  virtual int ConservativeUpperBound() const { return INT_MAX; }
+    // Conservative estimate on the lower/upper bound of the number of
+    // calls allowed.
+    virtual int ConservativeLowerBound() const { return 0; }
+    virtual int ConservativeUpperBound() const { return INT_MAX; }
 
-  // Returns true iff call_count calls will satisfy this cardinality.
-  virtual bool IsSatisfiedByCallCount(int call_count) const = 0;
+    // Returns true iff call_count calls will satisfy this cardinality.
+    virtual bool IsSatisfiedByCallCount(int call_count) const = 0;
 
-  // Returns true iff call_count calls will saturate this cardinality.
-  virtual bool IsSaturatedByCallCount(int call_count) const = 0;
+    // Returns true iff call_count calls will saturate this cardinality.
+    virtual bool IsSaturatedByCallCount(int call_count) const = 0;
 
-  // Describes self to an ostream.
-  virtual void DescribeTo(::std::ostream* os) const = 0;
+    // Describes self to an ostream.
+    virtual void DescribeTo(::std::ostream * os) const = 0;
 };
 
 // A Cardinality is a copyable and IMMUTABLE (except by assignment)
@@ -84,46 +86,44 @@ class CardinalityInterface {
 // be called.  The implementation of Cardinality is just a linked_ptr
 // to const CardinalityInterface, so copying is fairly cheap.
 // Don't inherit from Cardinality!
-class GTEST_API_ Cardinality {
- public:
-  // Constructs a null cardinality.  Needed for storing Cardinality
-  // objects in STL containers.
-  Cardinality() {}
+class GTEST_API_ Cardinality
+{
+public:
+    // Constructs a null cardinality.  Needed for storing Cardinality
+    // objects in STL containers.
+    Cardinality() {}
 
-  // Constructs a Cardinality from its implementation.
-  explicit Cardinality(const CardinalityInterface* impl) : impl_(impl) {}
+    // Constructs a Cardinality from its implementation.
+    explicit Cardinality(const CardinalityInterface * impl)
+        : impl_(impl)
+    {}
 
-  // Conservative estimate on the lower/upper bound of the number of
-  // calls allowed.
-  int ConservativeLowerBound() const { return impl_->ConservativeLowerBound(); }
-  int ConservativeUpperBound() const { return impl_->ConservativeUpperBound(); }
+    // Conservative estimate on the lower/upper bound of the number of
+    // calls allowed.
+    int ConservativeLowerBound() const { return impl_->ConservativeLowerBound(); }
+    int ConservativeUpperBound() const { return impl_->ConservativeUpperBound(); }
 
-  // Returns true iff call_count calls will satisfy this cardinality.
-  bool IsSatisfiedByCallCount(int call_count) const {
-    return impl_->IsSatisfiedByCallCount(call_count);
-  }
+    // Returns true iff call_count calls will satisfy this cardinality.
+    bool IsSatisfiedByCallCount(int call_count) const { return impl_->IsSatisfiedByCallCount(call_count); }
 
-  // Returns true iff call_count calls will saturate this cardinality.
-  bool IsSaturatedByCallCount(int call_count) const {
-    return impl_->IsSaturatedByCallCount(call_count);
-  }
+    // Returns true iff call_count calls will saturate this cardinality.
+    bool IsSaturatedByCallCount(int call_count) const { return impl_->IsSaturatedByCallCount(call_count); }
 
-  // Returns true iff call_count calls will over-saturate this
-  // cardinality, i.e. exceed the maximum number of allowed calls.
-  bool IsOverSaturatedByCallCount(int call_count) const {
-    return impl_->IsSaturatedByCallCount(call_count) &&
-        !impl_->IsSatisfiedByCallCount(call_count);
-  }
+    // Returns true iff call_count calls will over-saturate this
+    // cardinality, i.e. exceed the maximum number of allowed calls.
+    bool IsOverSaturatedByCallCount(int call_count) const
+    {
+        return impl_->IsSaturatedByCallCount(call_count) && !impl_->IsSatisfiedByCallCount(call_count);
+    }
 
-  // Describes self to an ostream
-  void DescribeTo(::std::ostream* os) const { impl_->DescribeTo(os); }
+    // Describes self to an ostream
+    void DescribeTo(::std::ostream * os) const { impl_->DescribeTo(os); }
 
-  // Describes the given actual call count to an ostream.
-  static void DescribeActualCallCountTo(int actual_call_count,
-                                        ::std::ostream* os);
+    // Describes the given actual call count to an ostream.
+    static void DescribeActualCallCountTo(int actual_call_count, ::std::ostream * os);
 
- private:
-  internal::linked_ptr<const CardinalityInterface> impl_;
+private:
+    internal::linked_ptr<const CardinalityInterface> impl_;
 };
 
 // Creates a cardinality that allows at least n calls.
@@ -142,12 +142,13 @@ GTEST_API_ Cardinality Between(int min, int max);
 GTEST_API_ Cardinality Exactly(int n);
 
 // Creates a cardinality from its implementation.
-inline Cardinality MakeCardinality(const CardinalityInterface* c) {
-  return Cardinality(c);
+inline Cardinality MakeCardinality(const CardinalityInterface * c)
+{
+    return Cardinality(c);
 }
 
-}  // namespace testing
+} // namespace testing
 
-GTEST_DISABLE_MSC_WARNINGS_POP_()  //  4251
+GTEST_DISABLE_MSC_WARNINGS_POP_() //  4251
 
-#endif  // GMOCK_INCLUDE_GMOCK_GMOCK_CARDINALITIES_H_
+#endif // GMOCK_INCLUDE_GMOCK_GMOCK_CARDINALITIES_H_

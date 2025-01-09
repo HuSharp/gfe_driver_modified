@@ -30,25 +30,33 @@
 #include "graph/edge.hpp"
 #include "graph/edge_stream.hpp"
 #if defined(HAVE_LLAMA) // to cross check with the implementation of LLAMA
-#include "library/llama/llama_class.hpp"
 #include "library/llama-dv/llama-dv.hpp"
+#include "library/llama/llama_class.hpp"
 #endif
 #include "library/graphone/graphone.hpp"
 #include "utility/graphalytics_validate.hpp"
 
 // Log to stdout
 #undef LOG
-#define LOG(message) { std::cout << "\033[0;32m" << "[          ] " << "\033[0;0m" << message << std::endl; }
+#define LOG(message)                                      \
+    {                                                     \
+        std::cout << "\033[0;32m"                         \
+                  << "[          ] "                      \
+                  << "\033[0;0m" << message << std::endl; \
+    }
 
 using namespace common::concurrency;
 using namespace gfe::graph;
 using namespace gfe::library;
 using namespace std;
 
-[[maybe_unused]] static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint64_t max_vector_id = 8){
+[[maybe_unused]] static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint64_t max_vector_id = 8)
+{
     vector<gfe::graph::WeightedEdge> edges;
-    for(uint64_t i = 1; i < max_vector_id; i++){
-        for(uint64_t j = i + 2; j < max_vector_id; j+=2){
+    for (uint64_t i = 1; i < max_vector_id; i++)
+    {
+        for (uint64_t j = i + 2; j < max_vector_id; j += 2)
+        {
             edges.push_back(gfe::graph::WeightedEdge{i, j, static_cast<double>(j * 1000 + i)});
         }
     }
@@ -56,21 +64,33 @@ using namespace std;
 }
 
 // Get the path to non existing temporary file
-[[maybe_unused]] static string temp_file_path(){
+[[maybe_unused]] static string temp_file_path()
+{
     char pattern[] = "/tmp/gfe_XXXXXX";
     int fd = mkstemp(pattern);
-    if(fd < 0){ ERROR("Cannot obtain a temporary file"); }
+    if (fd < 0)
+    {
+        ERROR("Cannot obtain a temporary file");
+    }
     close(fd); // we're going to overwrite this file anyway
     return string(pattern);
 }
 
 #if defined(HAVE_LLAMA)
 /**
- * Check whether the results of GraphOne for the PageRank yield the same results of LLAMA, as they rely on the same algorithm
+ * Check whether the results of GraphOne for the PageRank yield the same results
+ * of LLAMA, as they rely on the same algorithm
  */
-TEST(GraphOne, PageRank) {
-    LLAMAClass llama { /* directed = */ false };
-    GraphOne graphone { /* directed = */ false, /* vertex dict = */ true, /* blind writes = */ true, /* ignore build = */ false, /* GAP BS impl ?*/ false, /* num vertices */ 64 * 1024 * 1024 };
+TEST(GraphOne, PageRank)
+{
+    LLAMAClass llama{/* directed = */ false};
+    GraphOne graphone{
+        /* directed = */ false,
+        /* vertex dict = */ true,
+        /* blind writes = */ true,
+        /* ignore build = */ false,
+        /* GAP BS impl ?*/ false,
+        /* num vertices */ 64 * 1024 * 1024};
     uint64_t num_vertices = 128;
 
     LOG("Init stream");
@@ -78,13 +98,15 @@ TEST(GraphOne, PageRank) {
     stream->permute();
 
     LOG("Insert vertices ...")
-    for(uint64_t i = 1; i < num_vertices; i++){
+    for (uint64_t i = 1; i < num_vertices; i++)
+    {
         llama.add_vertex(i);
         graphone.add_vertex(i);
     }
 
     LOG("Insert edges ...");
-    for(uint64_t i =0; i < stream->num_edges(); i++){
+    for (uint64_t i = 0; i < stream->num_edges(); i++)
+    {
         auto edge = stream->get(i);
         llama.add_edge(edge);
         graphone.add_edge(edge);
@@ -94,8 +116,8 @@ TEST(GraphOne, PageRank) {
     llama.build();
     graphone.build();
 
-//    llama.dump();
-//    graphone.dump();
+    //    llama.dump();
+    //    graphone.dump();
 
     auto llama_results = temp_file_path();
     LOG("LLAMA PageRank: " << llama_results);
@@ -112,9 +134,16 @@ TEST(GraphOne, PageRank) {
 }
 #endif
 
-TEST(GraphOne, ConcurrentUpdates) {
-    GraphOne graphone { /* directed = */ false, /* vertex dict = */ true, /* blind writes = */ true, /* ignore build = */ false,  /* GAP BS impl ?*/ false, /* num vertices */ 64 * 1024 * 1024 };
-    uint64_t num_vertices = 1<<14;
+TEST(GraphOne, ConcurrentUpdates)
+{
+    GraphOne graphone{
+        /* directed = */ false,
+        /* vertex dict = */ true,
+        /* blind writes = */ true,
+        /* ignore build = */ false,
+        /* GAP BS impl ?*/ false,
+        /* num vertices */ 64 * 1024 * 1024};
+    uint64_t num_vertices = 1 << 14;
     uint64_t num_threads = 8;
 
     LOG("Init stream");
@@ -122,13 +151,15 @@ TEST(GraphOne, ConcurrentUpdates) {
     stream->permute();
 
     LOG("Insert " << num_vertices << " vertices ... ");
-    for(uint64_t i = 1; i < num_vertices; i++){
+    for (uint64_t i = 1; i < num_vertices; i++)
+    {
         graphone.add_vertex(i);
     }
 
     LOG("Insert " << stream->num_edges() << " edges with " << num_threads << " threads ...");
-    auto worker_insert = [&graphone, &stream](uint64_t start, uint64_t end){
-        for(uint64_t i = start; i < end; i++){
+    auto worker_insert = [&graphone, &stream](uint64_t start, uint64_t end) {
+        for (uint64_t i = start; i < end; i++)
+        {
             auto edge = stream->get(i);
             graphone.add_edge(edge);
         }
@@ -138,13 +169,15 @@ TEST(GraphOne, ConcurrentUpdates) {
     uint64_t partition_mod = stream->num_edges() % num_threads;
     uint64_t partition_start = 0;
     vector<thread> workers;
-    for(uint64_t i = 0; i < num_threads; i++){
+    for (uint64_t i = 0; i < num_threads; i++)
+    {
         uint64_t partition_end = partition_start + partition_sz + (i < partition_mod);
         workers.emplace_back(worker_insert, partition_start, partition_end);
         partition_start = partition_end; // next iteration
     }
 
-    for(auto& w: workers) w.join();
+    for (auto & w : workers)
+        w.join();
     workers.clear();
 
     LOG("Num levels (before build): " << graphone.num_levels());
@@ -158,11 +191,12 @@ TEST(GraphOne, ConcurrentUpdates) {
     LOG("Done");
 }
 
-
-
 #else
 #include <iostream>
-TEST(GraphOne, Disabled) {
-    std::cout << "Tests disabled as the build does not contain the support for GraphOne." << std::endl;
+TEST(GraphOne, Disabled)
+{
+    std::cout << "Tests disabled as the build does not contain the support for "
+                 "GraphOne."
+              << std::endl;
 }
 #endif

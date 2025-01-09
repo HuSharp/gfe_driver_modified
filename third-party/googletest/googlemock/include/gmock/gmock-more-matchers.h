@@ -27,7 +27,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 // Google Mock - a framework for writing C++ mock classes.
 //
 // This file implements some matchers that depend on gmock-generated-matchers.h.
@@ -42,51 +41,55 @@
 
 #include "gmock/gmock-generated-matchers.h"
 
-namespace testing {
+namespace testing
+{
 
 // Silence C4100 (unreferenced formal
 // parameter) for MSVC
 #ifdef _MSC_VER
-# pragma warning(push)
-# pragma warning(disable:4100)
+#pragma warning(push)
+#pragma warning(disable : 4100)
 #if (_MSC_VER == 1900)
 // and silence C4800 (C4800: 'int *const ': forcing value
 // to bool 'true' or 'false') for MSVC 14
-# pragma warning(disable:4800)
-  #endif
+#pragma warning(disable : 4800)
+#endif
 #endif
 
 // Defines a matcher that matches an empty container. The container must
 // support both size() and empty(), which all STL-like containers provide.
-MATCHER(IsEmpty, negation ? "isn't empty" : "is empty") {
-  if (arg.empty()) {
-    return true;
-  }
-  *result_listener << "whose size is " << arg.size();
-  return false;
+MATCHER(IsEmpty, negation ? "isn't empty" : "is empty")
+{
+    if (arg.empty())
+    {
+        return true;
+    }
+    *result_listener << "whose size is " << arg.size();
+    return false;
 }
 
 // Define a matcher that matches a value that evaluates in boolean
 // context to true.  Useful for types that define "explicit operator
 // bool" operators and so can't be compared for equality with true
 // and false.
-MATCHER(IsTrue, negation ? "is false" : "is true") {
-  return static_cast<bool>(arg);
+MATCHER(IsTrue, negation ? "is false" : "is true")
+{
+    return static_cast<bool>(arg);
 }
 
 // Define a matcher that matches a value that evaluates in boolean
 // context to false.  Useful for types that define "explicit operator
 // bool" operators and so can't be compared for equality with true
 // and false.
-MATCHER(IsFalse, negation ? "is true" : "is false") {
-  return !static_cast<bool>(arg);
+MATCHER(IsFalse, negation ? "is true" : "is false")
+{
+    return !static_cast<bool>(arg);
 }
 
 #ifdef _MSC_VER
-# pragma warning(pop)
+#pragma warning(pop)
 #endif
 
+} // namespace testing
 
-}  // namespace testing
-
-#endif  // GMOCK_INCLUDE_GMOCK_MORE_MATCHERS_H_
+#endif // GMOCK_INCLUDE_GMOCK_MORE_MATCHERS_H_

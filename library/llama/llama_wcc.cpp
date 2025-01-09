@@ -73,10 +73,6 @@
  * SUCH DAMAGE.
  */
 
-
-#include "llama_class.hpp"
-#include "llama_internal.hpp"
-
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -86,9 +82,10 @@
 #include <utility>
 #include <vector>
 
-#include "llama/ll_seq.h"
-
 #include "common/timer.hpp"
+#include "llama/ll_seq.h"
+#include "llama_class.hpp"
+#include "llama_internal.hpp"
 #include "third-party/libcuckoo/cuckoohash_map.hh"
 #include "utility/timeout_service.hpp"
 
@@ -104,27 +101,32 @@ using namespace std;
  *****************************************************************************/
 //#define DEBUG
 extern mutex _log_mutex [[maybe_unused]];
-#define COUT_DEBUG_FORCE(msg) { std::scoped_lock<std::mutex> lock{::_log_mutex}; std::cout << "[LLAMA::" << __FUNCTION__ << "] " << msg << std::endl; }
+#define COUT_DEBUG_FORCE(msg)                                                \
+    {                                                                        \
+        std::scoped_lock<std::mutex> lock{::_log_mutex};                     \
+        std::cout << "[LLAMA::" << __FUNCTION__ << "] " << msg << std::endl; \
+    }
 #if defined(DEBUG)
-    #define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
+#define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
 #else
-    #define COUT_DEBUG(msg)
+#define COUT_DEBUG(msg)
 #endif
-
 
 /*****************************************************************************
  *                                                                           *
  *  LLAMA's implementation                                                   *
  *                                                                           *
  *****************************************************************************/
-namespace { // anonymous
+namespace
+{ // anonymous
 
-template<class Graph, bool has_pre_visit, bool has_post_visit, bool has_navigator>
-class ll_dfs_template {
+template <class Graph, bool has_pre_visit, bool has_post_visit, bool has_navigator>
+class ll_dfs_template
+{
 protected:
-    gfe::utility::TimeoutService& timeout_srv;
+    gfe::utility::TimeoutService & timeout_srv;
     node_t root;
-    Graph& G;
+    Graph & G;
 
     // stack implementation
     node_t stack_ptr;
@@ -133,51 +135,57 @@ protected:
 
     // visited set implementation
     node_t cnt;
-    unsigned char* visited_bitmap;
+    unsigned char * visited_bitmap;
     std::unordered_set<node_t> visited_small;
     bool is_small;
     int THRESHOLD_LARGE;
     static const node_t INVALID_NODE = -1;
 
-    bool use_reverse_edge = false; // whether we are visiting the incoming edges in the current node being iterated
+    bool use_reverse_edge = false; // whether we are visiting the incoming edges
+        // in the current node being iterated
 
 protected:
-    virtual void visit_pre(node_t t) { };
-    virtual void visit_post(node_t t) { };
+    virtual void visit_pre(node_t t){};
+    virtual void visit_post(node_t t){};
     virtual bool check_navigator(node_t t, edge_t idx) { return true; };
 
 public:
-    ll_dfs_template(gfe::utility::TimeoutService& timeout_srv, Graph& _G) : timeout_srv(timeout_srv), G(_G) {
+    ll_dfs_template(gfe::utility::TimeoutService & timeout_srv, Graph & _G)
+        : timeout_srv(timeout_srv)
+        , G(_G)
+    {
         visited_bitmap = NULL; // bitmap
     }
 
-    virtual ~ll_dfs_template() {
-        delete visited_bitmap;
-    }
+    virtual ~ll_dfs_template() { delete visited_bitmap; }
 
-    void prepare(node_t root_node) {
+    void prepare(node_t root_node)
+    {
         root = root_node;
         cnt = 0;
         visited_small.clear();
 
-        is_small = true;;
+        is_small = true;
+        ;
         use_reverse_edge = true;
         iter.node = INVALID_NODE;
-        THRESHOLD_LARGE = std::max((int)(G.max_nodes()*0.1), 4096);
+        THRESHOLD_LARGE = std::max((int)(G.max_nodes() * 0.1), 4096);
     }
 
-    void do_dfs() {
+    void do_dfs()
+    {
         COUT_DEBUG("init: " << root);
         enter_node(root);
         main_loop();
     }
 
 private:
-    void enter_node(node_t n) {
+    void enter_node(node_t n)
+    {
         COUT_DEBUG("[" << stack.size() << "] node: " << n);
 
         // push current node
-        stack.push_back({ iter, use_reverse_edge });
+        stack.push_back({iter, use_reverse_edge});
 
         G.out_iter_begin(iter, n);
         use_reverse_edge = false;
@@ -185,25 +193,28 @@ private:
         // mark visited
         add_visited(n);
         cnt++;
-        if (cnt == THRESHOLD_LARGE) {
+        if (cnt == THRESHOLD_LARGE)
+        {
             prepare_large();
         }
 
-        if (has_pre_visit) visit_pre(n);
+        if (has_pre_visit)
+            visit_pre(n);
     }
 
-
-    void prepare_large() {
+    void prepare_large()
+    {
         delete[] visited_bitmap;
 
         visited_bitmap = new unsigned char[(G.max_nodes() + 7) / 8];
 
-        #pragma omp parallel for schedule(dynamic,16384)
+#pragma omp parallel for schedule(dynamic, 16384)
         for (int i = 0; i < (G.max_nodes() + 7) / 8; i++)
             visited_bitmap[i] = 0;
 
         std::unordered_set<node_t>::iterator I;
-        for (I = visited_small.begin(); I != visited_small.end(); I++) {
+        for (I = visited_small.begin(); I != visited_small.end(); I++)
+        {
             node_t u = *I;
             _ll_set_bit(visited_bitmap, u);
         }
@@ -211,55 +222,69 @@ private:
         stack.reserve(G.max_nodes());
     }
 
-
-    void exit_node(node_t n) {
-        if (has_post_visit) visit_post(n);
-        COUT_DEBUG("[" << stack.size() -1 << "] node: " << n);
-        auto& pair = stack.back();
+    void exit_node(node_t n)
+    {
+        if (has_post_visit)
+            visit_post(n);
+        COUT_DEBUG("[" << stack.size() - 1 << "] node: " << n);
+        auto & pair = stack.back();
         iter = pair.first;
         use_reverse_edge = pair.second;
         stack.pop_back();
     }
 
-    void main_loop() {
+    void main_loop()
+    {
         //----------------------------------
         // Repeat until stack is empty
         //----------------------------------
-        while (iter.node != INVALID_NODE && !timeout_srv.is_timeout()) {
+        while (iter.node != INVALID_NODE && !timeout_srv.is_timeout())
+        {
             //----------------------------------
             // Every neighbor has been visited
             //----------------------------------
-            if (iter.edge == LL_NIL_EDGE) {
-                if(use_reverse_edge == false){
-                    COUT_DEBUG("[" << stack.size() -1 << "] switch: " << iter.node);
+            if (iter.edge == LL_NIL_EDGE)
+            {
+                if (use_reverse_edge == false)
+                {
+                    COUT_DEBUG("[" << stack.size() - 1 << "] switch: " << iter.node);
                     G.in_iter_begin_fast(iter, iter.node);
                     use_reverse_edge = true;
-                } else { // we are done visiting iter.node
+                }
+                else
+                { // we are done visiting iter.node
                     exit_node(iter.node);
                 }
-
-            } else {
+            }
+            else
+            {
                 //----------------------------------
                 // check every non-visited neighbor
                 //----------------------------------
                 node_t z;
                 edge_t e;
-                if (use_reverse_edge) {
+                if (use_reverse_edge)
+                {
                     e = G.in_iter_next_fast(iter);
-                    COUT_DEBUG("[" << stack.size() -1 << "] in: " << iter.node << " <- " << iter.last_node);
-                } else {
+                    COUT_DEBUG("[" << stack.size() - 1 << "] in: " << iter.node << " <- " << iter.last_node);
+                }
+                else
+                {
                     e = G.out_iter_next(iter);
-                    COUT_DEBUG("[" << stack.size() -1 << "] out: " << iter.node << " -> " << iter.last_node);
+                    COUT_DEBUG("[" << stack.size() - 1 << "] out: " << iter.node << " -> " << iter.last_node);
                 }
                 assert(e != LL_NIL_EDGE);
                 z = iter.last_node;
 
-                if (has_visited(z)) {
+                if (has_visited(z))
+                {
                     continue;
                 }
 
-                if (has_navigator) {
-                    if (check_navigator(z, e) == false) {
+                if (has_navigator)
+                {
+                    if (check_navigator(z, e) == false)
+                    {
                         continue;
                     }
                 }
@@ -269,53 +294,63 @@ private:
         }
     }
 
-    void add_visited(node_t n) {
+    void add_visited(node_t n)
+    {
         if (is_small)
             visited_small.insert(n);
         else
             _ll_set_bit(visited_bitmap, n);
     }
 
-    bool has_visited(node_t n) {
-        if (is_small) {
+    bool has_visited(node_t n)
+    {
+        if (is_small)
+        {
             return (visited_small.find(n) != visited_small.end());
-        } else {
+        }
+        else
+        {
             return _ll_get_bit(visited_bitmap, n);
         }
     }
 };
 
-
 template <class Graph>
-class WeaklyConnectedComponents : public ll_dfs_template <Graph, true, false, false> {
+class WeaklyConnectedComponents : public ll_dfs_template<Graph, true, false, false>
+{
 public:
-    WeaklyConnectedComponents(TimeoutService& timeout_srv, Graph& _G, node_t*& _G_SCC, node_t _n)
-        : ll_dfs_template<Graph, true, false, false>(timeout_srv, _G),  G(_G), G_SCC(_G_SCC), n(_n){
+    WeaklyConnectedComponents(TimeoutService & timeout_srv, Graph & _G, node_t *& _G_SCC, node_t _n)
+        : ll_dfs_template<Graph, true, false, false>(timeout_srv, _G)
+        , G(_G)
+        , G_SCC(_G_SCC)
+        , n(_n)
+    {}
 
-    }
-
-private:  // list of variables
-    Graph& G;
-    node_t*& G_SCC;
+private: // list of variables
+    Graph & G;
+    node_t *& G_SCC;
     node_t n;
 
 protected:
-    virtual void visit_pre(node_t t) {
-        G_SCC[t] = n;
-    }
+    virtual void visit_pre(node_t t) { G_SCC[t] = n; }
 };
 
-static
-void llama_execute_wcc(TimeoutService& timeout_srv, ll_mlcsr_ro_graph& graph, /* output array, already allocated */ node_t* G_SCC){
-
-    #pragma omp parallel for
-    for (node_t t0 = 0; t0 < graph.max_nodes(); t0 ++) {
+static void llama_execute_wcc(
+    TimeoutService & timeout_srv,
+    ll_mlcsr_ro_graph & graph,
+    /* output array, already allocated */ node_t * G_SCC)
+{
+#pragma omp parallel for
+    for (node_t t0 = 0; t0 < graph.max_nodes(); t0++)
+    {
         graph.set_node_prop(G_SCC, t0, LL_NIL_NODE);
     }
 
-    for (node_t n = 0; n < graph.max_nodes(); n++ ){
-        if (G_SCC[n] == LL_NIL_NODE) {
-            WeaklyConnectedComponents<ll_mlcsr_ro_graph> _DFS(timeout_srv, graph, G_SCC,  n);
+    for (node_t n = 0; n < graph.max_nodes(); n++)
+    {
+        if (G_SCC[n] == LL_NIL_NODE)
+        {
+            WeaklyConnectedComponents<ll_mlcsr_ro_graph> _DFS(timeout_srv, graph, G_SCC, n);
             _DFS.prepare(n);
             _DFS.do_dfs();
         }
@@ -329,31 +364,39 @@ void llama_execute_wcc(TimeoutService& timeout_srv, ll_mlcsr_ro_graph& graph, /*
  *  Wrapper                                                                  *
  *                                                                           *
  *****************************************************************************/
-namespace gfe::library {
+namespace gfe::library
+{
 
-void LLAMAClass::wcc(const char* dump2file){
-    utility::TimeoutService timeout_srv { m_timeout };
-    Timer timer; timer.start();
+void LLAMAClass::wcc(const char * dump2file)
+{
+    utility::TimeoutService timeout_srv{m_timeout};
+    Timer timer;
+    timer.start();
 
     // retrieve the latest snapshot the internal source_vertex_id
     shared_lock<shared_mutex_t> slock(m_lock_checkpoint);
     auto graph = get_snapshot();
-//    dump_snapshot(graph);
+    //    dump_snapshot(graph);
     slock.unlock();
 
     // execute the WCC algorithm
-    unique_ptr<node_t[]> ptr_components { new node_t[graph.max_nodes()] };
-    node_t* components = ptr_components.get();
+    unique_ptr<node_t[]> ptr_components{new node_t[graph.max_nodes()]};
+    node_t * components = ptr_components.get();
     llama_execute_wcc(timeout_srv, graph, /* output */ components);
-    if(timeout_srv.is_timeout()){ RAISE_EXCEPTION(TimeoutError, "Timeout occurred after " << timer); }
+    if (timeout_srv.is_timeout())
+    {
+        RAISE_EXCEPTION(TimeoutError, "Timeout occurred after " << timer);
+    }
 
     // translate from llama ids to external vertex ids
     auto external_ids = translate(graph, components);
-    if(timeout_srv.is_timeout()){ RAISE_EXCEPTION(TimeoutError, "Timeout occurred after " << timer); }
+    if (timeout_srv.is_timeout())
+    {
+        RAISE_EXCEPTION(TimeoutError, "Timeout occurred after " << timer);
+    }
 
-    if(dump2file != nullptr) // store the results in the given file
+    if (dump2file != nullptr) // store the results in the given file
         save_results(external_ids, dump2file);
 }
 
-} // namespace
-
+} // namespace gfe::library

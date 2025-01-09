@@ -15,55 +15,61 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
-
 #include <string>
 
 #include "common/filesystem.hpp"
 #include "graph/edge_stream.hpp"
+#include "gtest/gtest.h"
 #include "library/baseline/adjacency_list.hpp"
 #include "library/baseline/csr.hpp"
 
 using namespace gfe::library;
 using namespace std;
 
-// Check that all edges are properly loaded from graphs/ldbc_graphalytics/example-directed.properties
-TEST(CSR, LoadDirected){
-    string graph_path = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-directed.properties";
+// Check that all edges are properly loaded from
+// graphs/ldbc_graphalytics/example-directed.properties
+TEST(CSR, LoadDirected)
+{
+    string graph_path
+        = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-directed.properties";
 
-    CSR csr { /* directed */ true };
+    CSR csr{/* directed */ true};
     csr.load(graph_path);
-    //csr.dump();
+    // csr.dump();
 
-    gfe::graph::WeightedEdgeStream stream { graph_path };
-    ASSERT_EQ( csr.num_edges(), stream.num_edges() );
-    for(uint64_t i = 0; i < stream.num_edges(); i++){
+    gfe::graph::WeightedEdgeStream stream{graph_path};
+    ASSERT_EQ(csr.num_edges(), stream.num_edges());
+    for (uint64_t i = 0; i < stream.num_edges(); i++)
+    {
         auto edge = stream.get(i);
-        ASSERT_TRUE( csr.has_vertex(edge.source()) );
-        ASSERT_TRUE( csr.has_vertex(edge.destination()) );
-        ASSERT_TRUE( csr.has_edge(edge.source(), edge.destination()) );
-        ASSERT_EQ( csr.get_weight(edge.source(), edge.destination()), edge.weight() );
+        ASSERT_TRUE(csr.has_vertex(edge.source()));
+        ASSERT_TRUE(csr.has_vertex(edge.destination()));
+        ASSERT_TRUE(csr.has_edge(edge.source(), edge.destination()));
+        ASSERT_EQ(csr.get_weight(edge.source(), edge.destination()), edge.weight());
     }
 }
 
-// Check that all edges are properly loaded from graphs/ldbc_graphalytics/example-undirected.properties
-TEST(CSR, LoadUndirected){
-    string graph_path = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.properties";
+// Check that all edges are properly loaded from
+// graphs/ldbc_graphalytics/example-undirected.properties
+TEST(CSR, LoadUndirected)
+{
+    string graph_path
+        = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.properties";
 
-    CSR csr { /* directed */ false };
+    CSR csr{/* directed */ false};
     csr.load(graph_path);
-    //csr.dump();
+    // csr.dump();
 
-    gfe::graph::WeightedEdgeStream stream { graph_path };
-    ASSERT_EQ( csr.num_edges(), stream.num_edges() );
-    for(uint64_t i = 0; i < stream.num_edges(); i++){
+    gfe::graph::WeightedEdgeStream stream{graph_path};
+    ASSERT_EQ(csr.num_edges(), stream.num_edges());
+    for (uint64_t i = 0; i < stream.num_edges(); i++)
+    {
         auto edge = stream.get(i);
-        ASSERT_TRUE( csr.has_vertex(edge.source()) );
-        ASSERT_TRUE( csr.has_vertex(edge.destination()) );
-        ASSERT_TRUE( csr.has_edge(edge.source(), edge.destination()) );
-        ASSERT_EQ( csr.get_weight(edge.source(), edge.destination()), edge.weight() );
-        ASSERT_TRUE( csr.has_edge(edge.destination(), edge.source()) );
-        ASSERT_EQ( csr.get_weight(edge.destination(), edge.source()), edge.weight() );
+        ASSERT_TRUE(csr.has_vertex(edge.source()));
+        ASSERT_TRUE(csr.has_vertex(edge.destination()));
+        ASSERT_TRUE(csr.has_edge(edge.source(), edge.destination()));
+        ASSERT_EQ(csr.get_weight(edge.source(), edge.destination()), edge.weight());
+        ASSERT_TRUE(csr.has_edge(edge.destination(), edge.source()));
+        ASSERT_EQ(csr.get_weight(edge.destination(), edge.source()), edge.weight());
     }
 }
-

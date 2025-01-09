@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "gtest/gtest.h"
-
-#include <limits>
 #include <iostream>
+#include <limits>
+
 #include "common/error.hpp"
 #include "common/filesystem.hpp"
 #include "graph/edge.hpp"
 #include "graph/edge_stream.hpp"
+#include "gtest/gtest.h"
 #include "reader/dimacs9_reader.hpp"
 #include "reader/graphalytics_reader.hpp"
 #include "reader/metis_reader.hpp"
@@ -31,30 +31,41 @@ using namespace gfe::graph;
 using namespace gfe::reader;
 using namespace std;
 
-static void validate_read(Reader& reader, uint64_t source, uint64_t dest, double weight = numeric_limits<double>::infinity()){
+static void validate_read(
+    Reader & reader,
+    uint64_t source,
+    uint64_t dest,
+    double weight = numeric_limits<double>::infinity())
+{
     WeightedEdge edge;
     bool rc = reader.read(edge);
     ASSERT_TRUE(rc);
     ASSERT_EQ(edge.source(), source);
     ASSERT_EQ(edge.destination(), dest);
 
-    if(weight != numeric_limits<double>::infinity()){
+    if (weight != numeric_limits<double>::infinity())
+    {
         ASSERT_EQ(edge.weight(), weight);
     }
 }
 
-TEST(PlainWeighted, WithoutComments) {
-    gfe::graph::WeightedEdgeStream stream{  common::filesystem::directory_executable() + "/graphs/weighted_no_comments.wel" };
+TEST(PlainWeighted, WithoutComments)
+{
+    gfe::graph::WeightedEdgeStream stream{
+        common::filesystem::directory_executable() + "/graphs/weighted_no_comments.wel"};
     stream.permute();
-
 }
 
-TEST(PlainWeighted, WithComments) {
-    // same graph as the one with no comments, the parser should be able to skip all commented lines successfully
-    PlainReader reader(common::filesystem::directory_executable() + "/graphs/weighted_with_comments.wel", /* weighted */ true);
+TEST(PlainWeighted, WithComments)
+{
+    // same graph as the one with no comments, the parser should be able to skip
+    // all commented lines successfully
+    PlainReader reader(
+        common::filesystem::directory_executable() + "/graphs/weighted_with_comments.wel",
+        /* weighted */ true);
 
     WeightedEdge edge;
-    bool rc { false };
+    bool rc{false};
 
     // vertex 1
     // 2 10 3 100 4 200
@@ -123,11 +134,15 @@ TEST(PlainWeighted, WithComments) {
     ASSERT_EQ(rc, false);
 }
 
-TEST(Plain, ConstantWeight) {
-    PlainReader reader(common::filesystem::directory_executable() + "/graphs/non_weighted.el", /* weighted */ false, /* max weight */ 1);
+TEST(Plain, ConstantWeight)
+{
+    PlainReader reader(
+        common::filesystem::directory_executable() + "/graphs/non_weighted.el",
+        /* weighted */ false,
+        /* max weight */ 1);
 
     WeightedEdge edge;
-    bool rc { false };
+    bool rc{false};
 
     // vertex 1
     // 2 10 3 100 4 200
@@ -196,11 +211,15 @@ TEST(Plain, ConstantWeight) {
     ASSERT_EQ(rc, false);
 }
 
-TEST(Plain, RandomWeight) {
-    PlainReader reader(common::filesystem::directory_executable() + "/graphs/non_weighted.el", /* weighted */ false, /* max weight */ 5);
+TEST(Plain, RandomWeight)
+{
+    PlainReader reader(
+        common::filesystem::directory_executable() + "/graphs/non_weighted.el",
+        /* weighted */ false,
+        /* max weight */ 5);
 
     WeightedEdge edge;
-    bool rc { false };
+    bool rc{false};
 
     // vertex 1
     // 2 10 3 100 4 200
@@ -208,17 +227,20 @@ TEST(Plain, RandomWeight) {
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 1);
     ASSERT_EQ(edge.destination(), 2);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
     rc = reader.read(edge);
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 1);
     ASSERT_EQ(edge.destination(), 3);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
     rc = reader.read(edge);
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 1);
     ASSERT_EQ(edge.destination(), 4);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
 
     // vertex 2
     // 1 10 4 10
@@ -226,12 +248,14 @@ TEST(Plain, RandomWeight) {
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 2);
     ASSERT_EQ(edge.destination(), 1);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
     rc = reader.read(edge);
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 2);
     ASSERT_EQ(edge.destination(), 4);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
 
     // vertex 3
     // 1 100 4 10
@@ -239,12 +263,14 @@ TEST(Plain, RandomWeight) {
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 3);
     ASSERT_EQ(edge.destination(), 1);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
     rc = reader.read(edge);
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 3);
     ASSERT_EQ(edge.destination(), 4);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
 
     // vertex 4
     // 1 200 2 10 3 10
@@ -252,24 +278,28 @@ TEST(Plain, RandomWeight) {
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 4);
     ASSERT_EQ(edge.destination(), 1);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
     rc = reader.read(edge);
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 4);
     ASSERT_EQ(edge.destination(), 2);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
     rc = reader.read(edge);
     ASSERT_EQ(rc, true);
     ASSERT_EQ(edge.source(), 4);
     ASSERT_EQ(edge.destination(), 3);
-    ASSERT_GE(edge.weight(), 1); ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
+    ASSERT_GE(edge.weight(), 1);
+    ASSERT_LE(edge.weight(), 5); // weight in [1, 5]
 
     // eof
     rc = reader.read(edge);
     ASSERT_EQ(rc, false);
 }
 
-TEST(Metis, WithoutComments) {
+TEST(Metis, WithoutComments)
+{
     MetisReader reader(common::filesystem::directory_executable() + "/graphs/weighted_no_comments.metis");
 
     // vertex 1
@@ -296,11 +326,13 @@ TEST(Metis, WithoutComments) {
 
     // eof
     WeightedEdge edge;
-    ASSERT_FALSE( reader.read(edge) );
+    ASSERT_FALSE(reader.read(edge));
 }
 
-TEST(Metis, WithComments) {
-    // same graph as metis without comments, the parser should be able to skip all commented lines successfully
+TEST(Metis, WithComments)
+{
+    // same graph as metis without comments, the parser should be able to skip all
+    // commented lines successfully
 
     MetisReader reader(common::filesystem::directory_executable() + "/graphs/weighted_with_comments.metis");
 
@@ -328,10 +360,11 @@ TEST(Metis, WithComments) {
 
     // eof
     WeightedEdge edge;
-    ASSERT_FALSE( reader.read(edge) );
+    ASSERT_FALSE(reader.read(edge));
 }
 
-TEST(Dimacs9, WithoutComments) {
+TEST(Dimacs9, WithoutComments)
+{
     Dimacs9Reader reader(common::filesystem::directory_executable() + "/graphs/weighted_no_comments.dimacs9");
 
     // vertex 1
@@ -358,10 +391,11 @@ TEST(Dimacs9, WithoutComments) {
 
     // eof
     WeightedEdge edge;
-    ASSERT_FALSE( reader.read(edge) );
+    ASSERT_FALSE(reader.read(edge));
 }
 
-TEST(Dimacs9, WithComments) {
+TEST(Dimacs9, WithComments)
+{
     Dimacs9Reader reader(common::filesystem::directory_executable() + "/graphs/weighted_with_comments.dimacs9");
 
     // vertex 1
@@ -388,10 +422,11 @@ TEST(Dimacs9, WithComments) {
 
     // eof
     WeightedEdge edge;
-    ASSERT_FALSE( reader.read(edge) );
+    ASSERT_FALSE(reader.read(edge));
 }
 
-TEST(Dimacs9, Rome99) {
+TEST(Dimacs9, Rome99)
+{
     Dimacs9Reader reader(common::filesystem::directory_executable() + "/graphs/rome99.gr");
 
     // check explicitly the first two edges
@@ -401,7 +436,8 @@ TEST(Dimacs9, Rome99) {
     validate_read(reader, 1494, 1573, 77);
 
     // there are still 8868 in the file, we'll explicitly check only the last two
-    for(int i = 0; i < 8866; i++){
+    for (int i = 0; i < 8866; i++)
+    {
         WeightedEdge edge;
         bool rc = reader.read(edge);
         ASSERT_EQ(rc, true);
@@ -415,12 +451,13 @@ TEST(Dimacs9, Rome99) {
 
     // eof
     WeightedEdge edge;
-    ASSERT_FALSE( reader.read(edge) );
+    ASSERT_FALSE(reader.read(edge));
 }
 
-
-TEST(Graphalytics, ExampleDirected) {
-    GraphalyticsReader reader(common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-directed.properties");
+TEST(Graphalytics, ExampleDirected)
+{
+    GraphalyticsReader reader(
+        common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-directed.properties");
 
     // Read the edges
     validate_read(reader, 1, 3, 0.5);
@@ -453,31 +490,33 @@ TEST(Graphalytics, ExampleDirected) {
     ASSERT_FALSE(reader.read(edge));
 
     // Read the vertices
-    uint64_t vertex { 0 };
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    uint64_t vertex{0};
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 1);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 2);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 3);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 4);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 5);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 6);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 7);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 8);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 9);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 10);
 }
 
-TEST(Graphalytics, ExampleUndirected) {
-    GraphalyticsReader reader(common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.properties");
+TEST(Graphalytics, ExampleUndirected)
+{
+    GraphalyticsReader reader(
+        common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.properties");
 
     // Read the edges
     reader.set_emit_directed_edges(true);
@@ -503,8 +542,11 @@ TEST(Graphalytics, ExampleUndirected) {
     validate_read(reader, 7, 9, 0.36);
 }
 
-TEST(Graphalytics, ExampleDirectedCompressed) {
-    GraphalyticsReader reader(common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-directed-compressed.properties");
+TEST(Graphalytics, ExampleDirectedCompressed)
+{
+    GraphalyticsReader reader(
+        common::filesystem::directory_executable()
+        + "/graphs/ldbc_graphalytics/example-directed-compressed.properties");
 
     // Read the edges
     validate_read(reader, 0, 1, 0.5);
@@ -537,31 +579,34 @@ TEST(Graphalytics, ExampleDirectedCompressed) {
     ASSERT_FALSE(reader.read(edge));
 
     // Read the vertices
-    uint64_t vertex { 0 };
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    uint64_t vertex{0};
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 0);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 1);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 2);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 3);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 4);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 5);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 6);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 7);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 8);
-    ASSERT_TRUE( reader.read_vertex(vertex) );
+    ASSERT_TRUE(reader.read_vertex(vertex));
     ASSERT_EQ(vertex, 9);
 }
 
-TEST(Graphalytics, ExampleUndirectedCompressed) {
-    GraphalyticsReader reader(common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected-compressed.properties");
+TEST(Graphalytics, ExampleUndirectedCompressed)
+{
+    GraphalyticsReader reader(
+        common::filesystem::directory_executable()
+        + "/graphs/ldbc_graphalytics/example-undirected-compressed.properties");
 
     // Read the edges
     reader.set_emit_directed_edges(true);
@@ -587,8 +632,11 @@ TEST(Graphalytics, ExampleUndirectedCompressed) {
     validate_read(reader, 6, 7, 0.36);
 }
 
-TEST(Graphalytics, ExampleUndirectedNonWeighted) {
-    GraphalyticsReader reader(common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected-nonweighted.properties");
+TEST(Graphalytics, ExampleUndirectedNonWeighted)
+{
+    GraphalyticsReader reader(
+        common::filesystem::directory_executable()
+        + "/graphs/ldbc_graphalytics/example-undirected-nonweighted.properties");
 
     // Read the edges
     reader.set_emit_directed_edges(true);

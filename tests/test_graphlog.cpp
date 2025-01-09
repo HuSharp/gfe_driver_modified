@@ -15,12 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
-
 #include <iostream>
 
 #include "common/filesystem.hpp"
 #include "graph/edge.hpp"
+#include "gtest/gtest.h"
 #include "reader/graphlog_reader.hpp"
 
 using namespace std;
@@ -28,9 +27,11 @@ using namespace gfe::graph;
 using namespace gfe::reader;
 using namespace gfe::reader::graphlog;
 
-const std::string path_graph = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.graphlog" ;
+const std::string path_graph
+    = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.graphlog";
 
-TEST(Graphlog, Properties){
+TEST(Graphlog, Properties)
+{
     Properties properties = parse_properties(path_graph);
     ASSERT_EQ(properties["aging_coeff"], "10");
     ASSERT_EQ(properties["ef_edges"], "1");
@@ -47,7 +48,8 @@ TEST(Graphlog, Properties){
     ASSERT_TRUE(properties.count("internal.vertices.temporary.begin"));
     ASSERT_TRUE(properties.count("internal.vertices.temporary.cardinality"));
 
-    // we created this graphlog ad hoc, we already know how many vertices and edges contain
+    // we created this graphlog ad hoc, we already know how many vertices and
+    // edges contain
     ASSERT_EQ(properties["internal.edges.cardinality"], "120");
     ASSERT_EQ(properties["internal.edges.final"], "12");
     ASSERT_EQ(properties["internal.vertices.cardinality"], "11");
@@ -55,20 +57,21 @@ TEST(Graphlog, Properties){
     ASSERT_EQ(properties["internal.vertices.temporary.cardinality"], "2");
 }
 
-
-TEST(Graphlog, VertexLoader){
+TEST(Graphlog, VertexLoader)
+{
     const uint64_t vertices_sz = 4;
-    unique_ptr<uint64_t[]> ptr_vertices { new uint64_t[vertices_sz] };
-    uint64_t* vertices = ptr_vertices.get();
+    unique_ptr<uint64_t[]> ptr_vertices{new uint64_t[vertices_sz]};
+    uint64_t * vertices = ptr_vertices.get();
 
     fstream handle(path_graph, ios_base::in | ios_base::binary);
     Properties properties = parse_properties(handle);
 
-    for(uint64_t i =0; i < 2; i++){ // repeat the test twice
+    for (uint64_t i = 0; i < 2; i++)
+    { // repeat the test twice
         // Read the final vertices from the log
         graphlog::set_marker(properties, handle, Section::VTX_FINAL);
 
-        VertexLoader loader { handle };
+        VertexLoader loader{handle};
         uint64_t num_vertices = loader.load(vertices, vertices_sz);
         ASSERT_EQ(num_vertices, 4ull);
         ASSERT_EQ(vertices[0], 2ull);
@@ -85,84 +88,91 @@ TEST(Graphlog, VertexLoader){
         ASSERT_EQ(num_vertices, 1ull);
         ASSERT_EQ(vertices[0], 10ull);
 
-        ASSERT_EQ( loader.load(vertices, vertices_sz), 0ull ); // depleted
-        ASSERT_EQ( loader.load(vertices, vertices_sz), 0ull ); // depleted
+        ASSERT_EQ(loader.load(vertices, vertices_sz), 0ull); // depleted
+        ASSERT_EQ(loader.load(vertices, vertices_sz), 0ull); // depleted
     }
 
-    for(uint64_t i =0; i < 2; i++) { // repeat the test twice
+    for (uint64_t i = 0; i < 2; i++)
+    { // repeat the test twice
         // Read the temporary vertices from the log
         graphlog::set_marker(properties, handle, Section::VTX_TEMP);
-        VertexLoader loader { handle };
+        VertexLoader loader{handle};
 
         uint64_t num_vertices = loader.load(vertices, vertices_sz);
         ASSERT_EQ(num_vertices, 2ull);
         ASSERT_EQ(vertices[0], 1ull);
         ASSERT_EQ(vertices[1], 11ull);
 
-        ASSERT_EQ( loader.load(vertices, vertices_sz), 0ull ); // depleted
-        ASSERT_EQ( loader.load(vertices, vertices_sz), 0ull ); // depleted
+        ASSERT_EQ(loader.load(vertices, vertices_sz), 0ull); // depleted
+        ASSERT_EQ(loader.load(vertices, vertices_sz), 0ull); // depleted
     }
 
     handle.close();
 }
 
-
-TEST(Graphlog, VertexReader){
+TEST(Graphlog, VertexReader)
+{
     fstream handle(path_graph, ios_base::in | ios_base::binary);
     Properties properties = parse_properties(handle);
 
-    for(uint64_t i = 0; i < 2; i++){ // repeat the test twice
+    for (uint64_t i = 0; i < 2; i++)
+    { // repeat the test twice
         // Read the final vertices from the log
         graphlog::set_marker(properties, handle, Section::VTX_FINAL);
 
-        VertexReader reader { handle };
+        VertexReader reader{handle};
         uint64_t vertex_id = 0;
 
-        for(uint64_t expected_vertex_id = 2; expected_vertex_id <= 10; expected_vertex_id ++){
-            ASSERT_TRUE( reader.read_vertex(vertex_id) );
-            ASSERT_EQ( vertex_id, expected_vertex_id );
+        for (uint64_t expected_vertex_id = 2; expected_vertex_id <= 10; expected_vertex_id++)
+        {
+            ASSERT_TRUE(reader.read_vertex(vertex_id));
+            ASSERT_EQ(vertex_id, expected_vertex_id);
         }
 
-        ASSERT_FALSE( reader.read_vertex(vertex_id) ); // depleted
-        ASSERT_FALSE( reader.read_vertex(vertex_id) ); // depleted
+        ASSERT_FALSE(reader.read_vertex(vertex_id)); // depleted
+        ASSERT_FALSE(reader.read_vertex(vertex_id)); // depleted
     }
 
-    for(uint64_t i = 0; i < 2; i++){ // repeat the test twice
+    for (uint64_t i = 0; i < 2; i++)
+    { // repeat the test twice
         // Read the final vertices from the log
         graphlog::set_marker(properties, handle, Section::VTX_TEMP);
 
-        VertexReader reader { handle };
+        VertexReader reader{handle};
         uint64_t vertex_id = 0;
 
-        ASSERT_TRUE( reader.read_vertex(vertex_id) );
-        ASSERT_EQ( vertex_id, 1ull );
-        ASSERT_TRUE( reader.read_vertex(vertex_id) );
-        ASSERT_EQ( vertex_id, 11ul );
+        ASSERT_TRUE(reader.read_vertex(vertex_id));
+        ASSERT_EQ(vertex_id, 1ull);
+        ASSERT_TRUE(reader.read_vertex(vertex_id));
+        ASSERT_EQ(vertex_id, 11ul);
 
-        ASSERT_FALSE( reader.read_vertex(vertex_id) ); // depleted
-        ASSERT_FALSE( reader.read_vertex(vertex_id) ); // depleted
+        ASSERT_FALSE(reader.read_vertex(vertex_id)); // depleted
+        ASSERT_FALSE(reader.read_vertex(vertex_id)); // depleted
     }
 
     handle.close();
 }
 
-TEST(Graphlog, EdgeLoader){
+TEST(Graphlog, EdgeLoader)
+{
     fstream handle(path_graph, ios_base::in | ios_base::binary);
     Properties properties = parse_properties(handle);
     graphlog::set_marker(properties, handle, Section::EDGES);
 
     const uint64_t array_sz = stoull(properties["internal.edges.block_size"]) / sizeof(uint64_t);
-    std::unique_ptr<uint64_t[]> ptr_array { new uint64_t[array_sz] };
-    uint64_t* array = ptr_array.get();
-    EdgeLoader loader { handle };
-    uint64_t num_edges; uint64_t i = 0;
+    std::unique_ptr<uint64_t[]> ptr_array{new uint64_t[array_sz]};
+    uint64_t * array = ptr_array.get();
+    EdgeLoader loader{handle};
+    uint64_t num_edges;
+    uint64_t i = 0;
 
-    while( (num_edges = loader.load(array, array_sz) ) > 0 ){
+    while ((num_edges = loader.load(array, array_sz)) > 0)
+    {
         ASSERT_EQ(num_edges, 5ull);
         i++;
     }
 
-    uint64_t edges_per_block = stoull(properties["internal.edges.block_size"]) / (3*sizeof(uint64_t));
+    uint64_t edges_per_block = stoull(properties["internal.edges.block_size"]) / (3 * sizeof(uint64_t));
     uint64_t num_edges_total = stoull(properties["internal.edges.cardinality"]);
     uint64_t num_blocks = num_edges_total / edges_per_block + (num_edges_total % edges_per_block != 0);
     ASSERT_EQ(i, num_blocks);
@@ -170,7 +180,12 @@ TEST(Graphlog, EdgeLoader){
     handle.close();
 }
 
-static void validate_edge(EdgeReader& reader, uint64_t expected_source_id, uint64_t expected_destination_id, double expected_weight){
+static void validate_edge(
+    EdgeReader & reader,
+    uint64_t expected_source_id,
+    uint64_t expected_destination_id,
+    double expected_weight)
+{
     gfe::graph::WeightedEdge edge;
     bool has_read_edge = reader.read_edge(edge);
     ASSERT_TRUE(has_read_edge);
@@ -179,32 +194,33 @@ static void validate_edge(EdgeReader& reader, uint64_t expected_source_id, uint6
     ASSERT_EQ(edge.weight(), expected_weight);
 }
 
-TEST(Graphlog, EdgeReader){
-    EdgeReader reader { path_graph };
+TEST(Graphlog, EdgeReader)
+{
+    EdgeReader reader{path_graph};
 
     /**
-     * Adapt the script below to generate the following list:
-     *
-     * #!/usr/bin/env perl
-     *
-     * use strict;
-     * use warnings;
-     *
-     * open(my $f, "input.txt"); # create a log (input.txt) in the generator of the form [src: <id>, dst: <id>, weight: <value>]
-     * my $matches = 0;
-     *
-     * while(my $line = <$f>){
-     *     if($line =~ /\[src: (\d+), dst: (\d+), weight: (-?[\d\.]+)\]/){
-     *         print("validate_edge(reader, $1, $2, $3);\n");
-     *         $matches ++;
-     *     }
-     * }
-     *
-     * close($f);
-     *
-     * print("matches: $matches\n");
-     *
-     */
+   * Adapt the script below to generate the following list:
+   *
+   * #!/usr/bin/env perl
+   *
+   * use strict;
+   * use warnings;
+   *
+   * open(my $f, "input.txt"); # create a log (input.txt) in the generator of
+   * the form [src: <id>, dst: <id>, weight: <value>] my $matches = 0;
+   *
+   * while(my $line = <$f>){
+   *     if($line =~ /\[src: (\d+), dst: (\d+), weight: (-?[\d\.]+)\]/){
+   *         print("validate_edge(reader, $1, $2, $3);\n");
+   *         $matches ++;
+   *     }
+   * }
+   *
+   * close($f);
+   *
+   * print("matches: $matches\n");
+   *
+   */
     validate_edge(reader, 6, 8, 0);
     validate_edge(reader, 3, 5, 0.5);
     validate_edge(reader, 5, 8, 0);
@@ -327,17 +343,21 @@ TEST(Graphlog, EdgeReader){
     validate_edge(reader, 4, 6, -1);
     { // stream depleted
         gfe::graph::WeightedEdge edge;
-        ASSERT_FALSE( reader.read_edge(edge) );
-        ASSERT_FALSE( reader.read_edge(edge) );
+        ASSERT_FALSE(reader.read_edge(edge));
+        ASSERT_FALSE(reader.read_edge(edge));
     }
 }
 
-TEST(Graphlog, DenseVertices){
+TEST(Graphlog, DenseVertices)
+{
     // reader for the graphs built with vtxremap
-    EdgeReader reader { common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected-compressed.graphlog"  };
+    EdgeReader reader{
+        common::filesystem::directory_executable()
+        + "/graphs/ldbc_graphalytics/example-undirected-compressed.graphlog"};
 
-    // use the script in tests/graphs/ldbc_graphalytics/example-undirected-validate.pl to create the following sequence from the debug
-    // log of the graphlog program
+    // use the script in
+    // tests/graphs/ldbc_graphalytics/example-undirected-validate.pl to create the
+    // following sequence from the debug log of the graphlog program
     validate_edge(reader, 5, 7, 0);
     validate_edge(reader, 6, 7, 0.36);
     validate_edge(reader, 1, 6, 0);
@@ -461,7 +481,7 @@ TEST(Graphlog, DenseVertices){
 
     { // stream depleted
         gfe::graph::WeightedEdge edge;
-        ASSERT_FALSE( reader.read_edge(edge) );
-        ASSERT_FALSE( reader.read_edge(edge) );
+        ASSERT_FALSE(reader.read_edge(edge));
+        ASSERT_FALSE(reader.read_edge(edge));
     }
 }

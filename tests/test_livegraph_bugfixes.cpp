@@ -34,17 +34,25 @@
 
 // Log to stdout
 #undef LOG
-#define LOG(message) { std::cout << "\033[0;32m" << "[          ] " << "\033[0;0m" << message << std::endl; }
+#define LOG(message)                                      \
+    {                                                     \
+        std::cout << "\033[0;32m"                         \
+                  << "[          ] "                      \
+                  << "\033[0;0m" << message << std::endl; \
+    }
 
 using namespace common::concurrency;
 using namespace gfe::graph;
 using namespace gfe::library;
 using namespace std;
 
-static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint64_t max_vector_id = 8){
+static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint64_t max_vector_id = 8)
+{
     vector<gfe::graph::WeightedEdge> edges;
-    for(uint64_t i = 1; i < max_vector_id; i++){
-        for(uint64_t j = i + 2; j < max_vector_id; j+=2){
+    for (uint64_t i = 1; i < max_vector_id; i++)
+    {
+        for (uint64_t j = i + 2; j < max_vector_id; j += 2)
+        {
             edges.push_back(gfe::graph::WeightedEdge{i, j, static_cast<double>(j * 1000 + i)});
         }
     }
@@ -52,17 +60,22 @@ static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint
 }
 
 // Get the path to non existing temporary file
-static string temp_file_path(){
+static string temp_file_path()
+{
     char pattern[] = "/tmp/gfe_XXXXXX";
     int fd = mkstemp(pattern);
-    if(fd < 0){ ERROR("Cannot obtain a temporary file"); }
+    if (fd < 0)
+    {
+        ERROR("Cannot obtain a temporary file");
+    }
     close(fd); // we're going to overwrite this file anyway
     return string(pattern);
 }
 
-TEST(LiveGraph, PageRankInternalImpl) {
-    CSR csr { /* directed ? */ false };
-    LiveGraphDriver livegraph { /* directed ? */ false };
+TEST(LiveGraph, PageRankInternalImpl)
+{
+    CSR csr{/* directed ? */ false};
+    LiveGraphDriver livegraph{/* directed ? */ false};
 
     uint64_t num_vertices = 1ull << 10;
 
@@ -72,8 +85,9 @@ TEST(LiveGraph, PageRankInternalImpl) {
 
     LOG("Insert " << stream->num_edges() << " edges into LiveGraph ...")
     uint64_t sz = stream->num_edges();
-    #pragma omp parallel for
-    for(uint64_t i = 0; i < sz; i++){
+#pragma omp parallel for
+    for (uint64_t i = 0; i < sz; i++)
+    {
         livegraph.add_edge_v2(stream->get(i));
     }
 
@@ -99,7 +113,9 @@ TEST(LiveGraph, PageRankInternalImpl) {
 
 #else
 #include <iostream>
-TEST(LiveGraph, Disabled) {
-    std::cout << "Tests disabled as the build does not contain the support for LiveGraph.\n";
+TEST(LiveGraph, Disabled)
+{
+    std::cout << "Tests disabled as the build does not contain the support for "
+                 "LiveGraph.\n";
 }
 #endif

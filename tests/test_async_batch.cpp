@@ -15,15 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
-#include "gtest/gtest.h"
-
 #include <cstdlib> // getenv
 #include <memory>
 #include <unordered_set>
 
 #include "experiment/details/async_batch.hpp"
 #include "graph/edge.hpp"
+#include "gtest/gtest.h"
 #include "library/baseline/adjacency_list.hpp"
 
 using namespace gfe::experiment::details;
@@ -31,27 +29,33 @@ using namespace gfe::graph;
 using namespace gfe::library;
 using namespace std;
 
-TEST(AsyncBatch, Sanity){
+TEST(AsyncBatch, Sanity)
+{
     auto library = make_shared<AdjacencyList>(/* directed = */ true);
-    AsyncBatch batch { library.get(), 1, /* num batches */ 3, /* batch_sz */ 4};
+    AsyncBatch batch{library.get(), 1, /* num batches */ 3, /* batch_sz */ 4};
 
-    for(uint64_t i = 1; i <= 8; i++){
+    for (uint64_t i = 1; i <= 8; i++)
+    {
         library->add_vertex(i);
     }
 
-    for(uint64_t i = 1; i < 8; i++){
-        for(uint64_t j = i +1; j <= 8; j++){
-            batch.add_edge(WeightedEdge{i, j, (double) i + j});
+    for (uint64_t i = 1; i < 8; i++)
+    {
+        for (uint64_t j = i + 1; j <= 8; j++)
+        {
+            batch.add_edge(WeightedEdge{i, j, (double)i + j});
         }
     }
     batch.flush(true);
 
-//    library->dump();
+    //    library->dump();
 
-    for(uint64_t i = 1; i < 8; i++){
-        for(uint64_t j = i +1; j <= 8; j++){
+    for (uint64_t i = 1; i < 8; i++)
+    {
+        for (uint64_t j = i + 1; j <= 8; j++)
+        {
             ASSERT_TRUE(library->has_edge(i, j));
-            ASSERT_EQ(library->get_weight(i, j), i +j);
+            ASSERT_EQ(library->get_weight(i, j), i + j);
         }
     }
 }

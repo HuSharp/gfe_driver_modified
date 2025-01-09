@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "stinger.hpp"
-
 #include <algorithm>
 #include <chrono>
 #include <cinttypes>
@@ -28,6 +26,7 @@
 #include <unordered_map>
 
 #include "common/system.hpp"
+#include "stinger.hpp"
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_error.hpp"
@@ -36,13 +35,19 @@ using namespace libcuckoo;
 using namespace std;
 
 // Macros
-#define STINGER reinterpret_cast<struct stinger*>(m_stinger_graph)
+#define STINGER reinterpret_cast<struct stinger *>(m_stinger_graph)
 #undef CURRENT_ERROR_TYPE
 #define CURRENT_ERROR_TYPE ::gfe::library::StingerError
 #define TIMER_INIT auto time_start = chrono::steady_clock::now();
-#define CHECK_TIMEOUT if(m_timeout > 0 && (chrono::steady_clock::now() - time_start) > chrono::seconds(m_timeout)) { \
-        RAISE_EXCEPTION(TimeoutError, "Timeout occurred after: " << chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - time_start).count() << " seconds") };
-
+#define CHECK_TIMEOUT                                                                                       \
+    if (m_timeout > 0 && (chrono::steady_clock::now() - time_start) > chrono::seconds(m_timeout))           \
+    {                                                                                                       \
+        RAISE_EXCEPTION(                                                                                    \
+            TimeoutError,                                                                                   \
+            "Timeout occurred after: "                                                                      \
+                << chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - time_start).count() \
+                << " seconds")                                                                              \
+    };
 
 /******************************************************************************
  *                                                                            *
@@ -51,13 +56,17 @@ using namespace std;
  *****************************************************************************/
 //#define DEBUG
 extern mutex _log_mutex [[maybe_unused]];
-#define COUT_DEBUG_FORCE(msg) { scoped_lock<mutex> lock(::_log_mutex); std::cout << "[Stinger::" << __FUNCTION__ << "] [" << common::concurrency::get_thread_id() << "] " << msg << std::endl; }
+#define COUT_DEBUG_FORCE(msg)                                                                                     \
+    {                                                                                                             \
+        scoped_lock<mutex> lock(::_log_mutex);                                                                    \
+        std::cout << "[Stinger::" << __FUNCTION__ << "] [" << common::concurrency::get_thread_id() << "] " << msg \
+                  << std::endl;                                                                                   \
+    }
 #if defined(DEBUG)
-    #define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
+#define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
 #else
-    #define COUT_DEBUG(msg)
+#define COUT_DEBUG(msg)
 #endif
-
 
 /******************************************************************************
  *                                                                            *
@@ -65,14 +74,18 @@ extern mutex _log_mutex [[maybe_unused]];
  *                                                                            *
  ******************************************************************************/
 // dump the content to the given file
-static void save(vector<pair<uint64_t, int64_t>>& result, const char* dump2file){
-    if(dump2file == nullptr) return; // nop
+static void save(vector<pair<uint64_t, int64_t>> & result, const char * dump2file)
+{
+    if (dump2file == nullptr)
+        return; // nop
     COUT_DEBUG("save the results to: " << dump2file)
 
     fstream handle(dump2file, ios_base::out);
-    if(!handle.good()) ERROR("Cannot save the result to `" << dump2file << "'");
+    if (!handle.good())
+        ERROR("Cannot save the result to `" << dump2file << "'");
 
-    for(auto p : result){
+    for (auto p : result)
+    {
         handle << p.first << " " << p.second << "\n";
     }
 
@@ -84,33 +97,41 @@ static void save(vector<pair<uint64_t, int64_t>>& result, const char* dump2file)
  *  Community detection through label propagation                             *
  *                                                                            *
  ******************************************************************************/
-namespace gfe::library {
+namespace gfe::library
+{
 
-void Stinger::cdlp(uint64_t max_iterations, const char* dump2file){
+void Stinger::cdlp(uint64_t max_iterations, const char * dump2file)
+{
     TIMER_INIT
 
     bool change = true;
     int64_t num_mappings = get_max_num_mappings();
-    auto ptr_labels0 = make_unique<int64_t[]>(num_mappings); int64_t* labels0 = ptr_labels0.get();
-    auto ptr_labels1 = make_unique<int64_t[]>(num_mappings); int64_t* labels1 = ptr_labels1.get();
+    auto ptr_labels0 = make_unique<int64_t[]>(num_mappings);
+    int64_t * labels0 = ptr_labels0.get();
+    auto ptr_labels1 = make_unique<int64_t[]>(num_mappings);
+    int64_t * labels1 = ptr_labels1.get();
 
-    // initialisation
-    #pragma omp parallel for
-    for(int64_t n = 0; n < num_mappings; n++){
+// initialisation
+#pragma omp parallel for
+    for (int64_t n = 0; n < num_mappings; n++)
+    {
         labels0[n] = get_external_id(n);
     }
 
     // algorithm pass
-    for(uint64_t i = 0; i < max_iterations && change; i++){
+    for (uint64_t i = 0; i < max_iterations && change; i++)
+    {
         COUT_DEBUG("iteration: " << i);
         CHECK_TIMEOUT
         change = false;
 
-        #pragma omp parallel for shared(change) schedule(dynamic, 64)
-        for(int64_t n = 0; n < num_mappings; n++){
+#pragma omp parallel for shared(change) schedule(dynamic, 64)
+        for (int64_t n = 0; n < num_mappings; n++)
+        {
             labels1[n] = cdlp_propagate(n, labels0);
-            if(get_external_id(n) >= 0){
-                COUT_DEBUG("label[" << get_external_id(n) << "]  "  << labels0[n] << " -> " << labels1[n] );
+            if (get_external_id(n) >= 0)
+            {
+                COUT_DEBUG("label[" << get_external_id(n) << "]  " << labels0[n] << " -> " << labels1[n]);
             }
             change |= (labels0[n] != labels1[n]);
         }
@@ -123,27 +144,35 @@ void Stinger::cdlp(uint64_t max_iterations, const char* dump2file){
     save(result, dump2file);
 }
 
-int64_t Stinger::cdlp_propagate(int64_t vertex_id, int64_t* __restrict labels){
+int64_t Stinger::cdlp_propagate(int64_t vertex_id, int64_t * __restrict labels)
+{
     unordered_map<int64_t, uint64_t> histogram;
 
     // compute the histogram
-    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(STINGER, vertex_id) {
+    STINGER_FORALL_OUT_EDGES_OF_VTX_BEGIN(STINGER, vertex_id)
+    {
         histogram[labels[STINGER_EDGE_DEST]]++;
-    } STINGER_FORALL_OUT_EDGES_OF_VTX_END();
+    }
+    STINGER_FORALL_OUT_EDGES_OF_VTX_END();
 
-    // cfr. Spec v0.9 pp 14 "If the graph is directed and a neighbor is reachable via both an incoming and
-    // outgoing edge, its label will be counted twice"
-    if(m_directed){
-        STINGER_FORALL_IN_EDGES_OF_VTX_BEGIN(STINGER, vertex_id) {
+    // cfr. Spec v0.9 pp 14 "If the graph is directed and a neighbor is reachable
+    // via both an incoming and outgoing edge, its label will be counted twice"
+    if (m_directed)
+    {
+        STINGER_FORALL_IN_EDGES_OF_VTX_BEGIN(STINGER, vertex_id)
+        {
             histogram[labels[STINGER_EDGE_DEST]]++;
-        } STINGER_FORALL_IN_EDGES_OF_VTX_END();
+        }
+        STINGER_FORALL_IN_EDGES_OF_VTX_END();
     }
 
     // get the max label
     int64_t label_max = numeric_limits<int64_t>::max();
     uint64_t count_max = 0;
-    for(const auto pair : histogram){
-        if(pair.second > count_max || (pair.second == count_max && pair.first < label_max)){
+    for (const auto pair : histogram)
+    {
+        if (pair.second > count_max || (pair.second == count_max && pair.first < label_max))
+        {
             label_max = pair.first;
             count_max = pair.second;
         }
@@ -152,4 +181,4 @@ int64_t Stinger::cdlp_propagate(int64_t vertex_id, int64_t* __restrict labels){
     return label_max;
 }
 
-} // namespace
+} // namespace gfe::library

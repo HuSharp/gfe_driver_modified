@@ -24,18 +24,19 @@
 #include <iostream>
 #include <regex>
 #include <stdexcept>
-#include "zlib.h"
 
 #include "common/filesystem.hpp"
-#include "graph/edge.hpp"
 #include "configuration.hpp"
+#include "graph/edge.hpp"
+#include "zlib.h"
 
 using namespace std;
 
 #undef CURRENT_ERROR_TYPE
 #define CURRENT_ERROR_TYPE ::gfe::reader::ReaderError
 
-namespace gfe::reader {
+namespace gfe::reader
+{
 
 /*****************************************************************************
  *                                                                           *
@@ -43,11 +44,14 @@ namespace gfe::reader {
  *                                                                           *
  *****************************************************************************/
 //#define DEBUG
-#define COUT_DEBUG_FORCE(msg) { std::cout << "[Graphlog::" << __FUNCTION__ << "] " << msg << std::endl; }
+#define COUT_DEBUG_FORCE(msg)                                                   \
+    {                                                                           \
+        std::cout << "[Graphlog::" << __FUNCTION__ << "] " << msg << std::endl; \
+    }
 #if defined(DEBUG)
-    #define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
+#define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
 #else
-    #define COUT_DEBUG(msg)
+#define COUT_DEBUG(msg)
 #endif
 
 /*****************************************************************************
@@ -55,12 +59,16 @@ namespace gfe::reader {
  *  Properties                                                               *
  *                                                                           *
  *****************************************************************************/
-namespace graphlog {
+namespace graphlog
+{
 
-Properties parse_properties(const std::string& path_graphlog){
-    if(!common::filesystem::file_exists(path_graphlog)) ERROR("The given file does not exist: " << path_graphlog);
+Properties parse_properties(const std::string & path_graphlog)
+{
+    if (!common::filesystem::file_exists(path_graphlog))
+        ERROR("The given file does not exist: " << path_graphlog);
     fstream handle{path_graphlog, ios_base::in | ios_base::binary};
-    if(!handle.good()) ERROR("Cannot open the file: " << path_graphlog);
+    if (!handle.good())
+        ERROR("Cannot open the file: " << path_graphlog);
     Properties properties = parse_properties(handle);
     handle.close();
 
@@ -68,20 +76,25 @@ Properties parse_properties(const std::string& path_graphlog){
 }
 
 // Read the properties from the given handle
-Properties parse_properties(std::fstream& handle){
+Properties parse_properties(std::fstream & handle)
+{
     Properties properties;
     string line;
     getline(handle, line);
-    if(line != "# GRAPHLOG") ERROR("Missing magic header '# GRAPHLOG'");
+    if (line != "# GRAPHLOG")
+        ERROR("Missing magic header '# GRAPHLOG'");
 
-    regex pattern { "^\\s*([A-Za-z0-9_.-]+?)\\s*=\\s*([^#\n]+?)\\s*" };
-    while(!handle.eof()){
+    regex pattern{"^\\s*([A-Za-z0-9_.-]+?)\\s*=\\s*([^#\n]+?)\\s*"};
+    while (!handle.eof())
+    {
         string line;
         getline(handle, line);
-        if(line == "__BINARY_SECTION_FOLLOWS") break; // done
+        if (line == "__BINARY_SECTION_FOLLOWS")
+            break; // done
 
         smatch matches;
-        if ( regex_match(line, matches, pattern) ) { // side effect => populate matches
+        if (regex_match(line, matches, pattern))
+        { // side effect => populate matches
             string key = matches[1];
             string value = matches[2];
 
@@ -92,10 +105,12 @@ Properties parse_properties(std::fstream& handle){
     return properties;
 }
 
-void set_marker(const Properties& properties, std::fstream& handle, Section section){
+void set_marker(const Properties & properties, std::fstream & handle, Section section)
+{
     Properties::const_iterator property;
 
-    switch(section){
+    switch (section)
+    {
     case Section::VTX_FINAL:
         property = properties.find("internal.vertices.final.begin");
         break;
@@ -107,7 +122,8 @@ void set_marker(const Properties& properties, std::fstream& handle, Section sect
         break;
     }
 
-    if(property == properties.end()) ERROR("Missing required property");
+    if (property == properties.end())
+        ERROR("Missing required property");
 
     handle.clear(); // if eof() -> clear the flags
     handle.seekg(stoull(property->second));
@@ -120,9 +136,12 @@ void set_marker(const Properties& properties, std::fstream& handle, Section sect
  *  VertexLoader                                                             *
  *                                                                           *
  *****************************************************************************/
-namespace graphlog {
+namespace graphlog
+{
 
-VertexLoader::VertexLoader(std::fstream& handle) : m_handle(handle) {
+VertexLoader::VertexLoader(std::fstream & handle)
+    : m_handle(handle)
+{
     m_input_stream_pos = m_handle.tellg();
 
     // internal buffers
@@ -130,80 +149,104 @@ VertexLoader::VertexLoader(std::fstream& handle) : m_handle(handle) {
 
     // initialise the compressed stream
     m_zstream = malloc(sizeof(z_stream));
-    if(m_zstream == nullptr) throw bad_alloc();
-    z_stream* zstream = reinterpret_cast<z_stream*>(m_zstream);
+    if (m_zstream == nullptr)
+        throw bad_alloc();
+    z_stream * zstream = reinterpret_cast<z_stream *>(m_zstream);
     zstream->zalloc = Z_NULL;
     zstream->zfree = Z_NULL;
     zstream->opaque = Z_NULL;
     zstream->avail_in = 0;
-    zstream->next_in = (unsigned char*) m_input_stream;
+    zstream->next_in = (unsigned char *)m_input_stream;
     zstream->avail_out = 0;
     zstream->next_out = nullptr;
     int rc = inflateInit2(zstream, -15);
-    if(rc != Z_OK) ERROR("Cannot initialise the library zlib");
+    if (rc != Z_OK)
+        ERROR("Cannot initialise the library zlib");
 }
 
-VertexLoader::~VertexLoader(){
-    if(m_zstream != nullptr){
-        inflateEnd(reinterpret_cast<z_stream*>(m_zstream));
-        free(m_zstream); m_zstream = nullptr;
+VertexLoader::~VertexLoader()
+{
+    if (m_zstream != nullptr)
+    {
+        inflateEnd(reinterpret_cast<z_stream *>(m_zstream));
+        free(m_zstream);
+        m_zstream = nullptr;
     }
 
-    delete[] m_input_stream; m_input_stream = nullptr;
+    delete[] m_input_stream;
+    m_input_stream = nullptr;
 }
 
-uint64_t VertexLoader::load(uint64_t* array, uint64_t array_sz){
-    if(array == nullptr) INVALID_ARGUMENT("The argument `array' is null");
-    if(m_zstream == nullptr || array_sz == 0) return 0;
-    z_stream* zstream = reinterpret_cast<z_stream*>(m_zstream);
+uint64_t VertexLoader::load(uint64_t * array, uint64_t array_sz)
+{
+    if (array == nullptr)
+        INVALID_ARGUMENT("The argument `array' is null");
+    if (m_zstream == nullptr || array_sz == 0)
+        return 0;
+    z_stream * zstream = reinterpret_cast<z_stream *>(m_zstream);
     uint64_t num_elements_loaded = 0;
     bool depleted = false;
 
-    do {
+    do
+    {
         // read the content from the input file
-        if(zstream->avail_in == 0){
+        if (zstream->avail_in == 0)
+        {
             m_handle.seekp(m_input_stream_pos);
-            m_handle.read((char*) m_input_stream, m_input_stream_sz);
+            m_handle.read((char *)m_input_stream, m_input_stream_sz);
             uint64_t data_read = m_input_stream_sz;
-            if(m_handle.eof()){
+            if (m_handle.eof())
+            {
                 data_read = static_cast<uint64_t>(m_handle.tellg()) - m_input_stream_sz;
-            } else if(m_handle.bad()){ ERROR("Cannot read from the input file"); }
+            }
+            else if (m_handle.bad())
+            {
+                ERROR("Cannot read from the input file");
+            }
 
             zstream->next_in = m_input_stream;
             zstream->avail_in = data_read;
             m_input_stream_pos += data_read;
 
-            COUT_DEBUG("[INPUT VERTICES] " << (int) m_input_stream[0] << ":" << (int) m_input_stream[1] << ":" << (int) m_input_stream[2] << ":" << (int) m_input_stream[3]);
+            COUT_DEBUG(
+                "[INPUT VERTICES] " << (int)m_input_stream[0] << ":" << (int)m_input_stream[1] << ":"
+                                    << (int)m_input_stream[2] << ":" << (int)m_input_stream[3]);
         }
 
         // copy the remaining m_output_leftover at the start of the stream
         array[0] = m_output_leftover;
-        uint8_t* output_buffer = (uint8_t*) array;
+        uint8_t * output_buffer = (uint8_t *)array;
         uint64_t output_buffer_sz = array_sz * sizeof(uint64_t) - m_output_leftover_sz;
 
         // decompress the input
         zstream->next_out = output_buffer + m_output_leftover_sz;
         zstream->avail_out = output_buffer_sz;
         int rc = inflate(zstream, Z_NO_FLUSH);
-        if(rc != Z_OK && rc != Z_STREAM_END) ERROR("Cannot decompress the input stream: " << zstream->msg << " (rc: " << rc << ")");
+        if (rc != Z_OK && rc != Z_STREAM_END)
+            ERROR("Cannot decompress the input stream: " << zstream->msg << " (rc: " << rc << ")");
         depleted = (rc == Z_STREAM_END);
         uint64_t data_processed = m_output_leftover_sz + (output_buffer_sz - zstream->avail_out);
         num_elements_loaded = data_processed / sizeof(uint64_t);
         m_output_leftover_sz = data_processed % sizeof(uint64_t);
-        if(m_output_leftover_sz > 0) { m_output_leftover = array[num_elements_loaded]; }
+        if (m_output_leftover_sz > 0)
+        {
+            m_output_leftover = array[num_elements_loaded];
+        }
         assert(depleted == false || m_output_leftover_sz == 0);
         COUT_DEBUG("data_processed: " << data_processed << ", first value: " << array[0]);
     } while (num_elements_loaded == 0 && !depleted);
 
-    if(depleted){
+    if (depleted)
+    {
         inflateEnd(zstream);
-        free(m_zstream); m_zstream = nullptr;
+        free(m_zstream);
+        m_zstream = nullptr;
     }
 
     return num_elements_loaded;
 }
 
-} // namespace
+} // namespace graphlog
 
 /*****************************************************************************
  *                                                                           *
@@ -211,21 +254,28 @@ uint64_t VertexLoader::load(uint64_t* array, uint64_t array_sz){
  *                                                                           *
  *****************************************************************************/
 
-namespace graphlog {
+namespace graphlog
+{
 
-VertexReader::VertexReader(fstream& handle) : m_loader(handle), m_buffer(new uint64_t[m_buffer_capacity]) {
+VertexReader::VertexReader(fstream & handle)
+    : m_loader(handle)
+    , m_buffer(new uint64_t[m_buffer_capacity])
+{}
 
+VertexReader::~VertexReader()
+{
+    delete[] m_buffer;
+    m_buffer = nullptr;
 }
 
-VertexReader::~VertexReader(){
-    delete[] m_buffer; m_buffer = nullptr;
-}
-
-bool VertexReader::read_vertex(uint64_t& out_vertex){
-    if(m_position >= m_buffer_size){
+bool VertexReader::read_vertex(uint64_t & out_vertex)
+{
+    if (m_position >= m_buffer_size)
+    {
         m_position = 0; // reset the position of the iterator
         m_buffer_size = m_loader.load(m_buffer, m_buffer_capacity);
-        if(m_buffer_size == 0) return false;
+        if (m_buffer_size == 0)
+            return false;
     }
 
     out_vertex = m_buffer[m_position];
@@ -233,7 +283,7 @@ bool VertexReader::read_vertex(uint64_t& out_vertex){
     return true;
 }
 
-} // namespace
+} // namespace graphlog
 
 /*****************************************************************************
  *                                                                           *
@@ -241,17 +291,24 @@ bool VertexReader::read_vertex(uint64_t& out_vertex){
  *                                                                           *
  *****************************************************************************/
 
-namespace graphlog {
-EdgeLoader::EdgeLoader(std::fstream& handle) : m_handle(handle) {
+namespace graphlog
+{
+EdgeLoader::EdgeLoader(std::fstream & handle)
+    : m_handle(handle)
+{
     m_input_stream = new uint8_t[m_input_stream_sz];
 }
 
-EdgeLoader::~EdgeLoader(){
-    delete[] m_input_stream; m_input_stream = nullptr;
+EdgeLoader::~EdgeLoader()
+{
+    delete[] m_input_stream;
+    m_input_stream = nullptr;
 }
 
-uint64_t EdgeLoader::load(uint64_t* array, uint64_t num_edges){
-    if(!m_handle.good()) return 0;
+uint64_t EdgeLoader::load(uint64_t * array, uint64_t num_edges)
+{
+    if (!m_handle.good())
+        return 0;
 
     std::streampos handle_pos_start = m_handle.tellg();
     uint64_t num_edges_loaded = 0;
@@ -263,14 +320,16 @@ uint64_t EdgeLoader::load(uint64_t* array, uint64_t num_edges){
     z.zfree = Z_NULL;
     z.opaque = Z_NULL;
     z.avail_in = 0;
-    z.next_in = (unsigned char*) m_input_stream;
+    z.next_in = (unsigned char *)m_input_stream;
     uint64_t output_buffer_sz = num_edges * sizeof(uint64_t) * 3;
     z.avail_out = output_buffer_sz;
-    z.next_out = (unsigned char*) array;
+    z.next_out = (unsigned char *)array;
     int rc = inflateInit2(&z, -15);
-    if(rc != Z_OK) ERROR("Cannot initialise the library zlib");
+    if (rc != Z_OK)
+        ERROR("Cannot initialise the library zlib");
 
-    do {
+    do
+    {
         // the input buffer must have been consumed
         assert(z.avail_in == 0);
         uint64_t input_stream_sz = 0;
@@ -278,31 +337,43 @@ uint64_t EdgeLoader::load(uint64_t* array, uint64_t num_edges){
         // read the content from the input file
         std::streampos handle_pos_last = m_handle.tellg();
 
-        m_handle.read((char*) m_input_stream, m_input_stream_sz);
+        m_handle.read((char *)m_input_stream, m_input_stream_sz);
         input_stream_sz = m_input_stream_sz;
-        if(m_handle.eof()){
+        if (m_handle.eof())
+        {
             m_handle.clear();
             m_handle.seekg(0, ios_base::end);
             input_stream_sz = static_cast<uint64_t>(m_handle.tellg()) - handle_pos_last;
-        } else if(m_handle.bad()){ ERROR("Cannot read from the input file"); }
+        }
+        else if (m_handle.bad())
+        {
+            ERROR("Cannot read from the input file");
+        }
 
-        if(input_stream_sz == 0) break; // EOF, there is nothing to read
+        if (input_stream_sz == 0)
+            break; // EOF, there is nothing to read
 
         z.next_in = m_input_stream;
         z.avail_in = input_stream_sz;
 
-        COUT_DEBUG("[INPUT EDGES] " << (int) m_input_stream[0] << ":" << (int) m_input_stream[1] << ":" << (int) m_input_stream[2] << ":" << (int) m_input_stream[3] << " z.avail_in: " << z.avail_in);
+        COUT_DEBUG(
+            "[INPUT EDGES] " << (int)m_input_stream[0] << ":" << (int)m_input_stream[1] << ":" << (int)m_input_stream[2]
+                             << ":" << (int)m_input_stream[3] << " z.avail_in: " << z.avail_in);
 
         // decompress the input
         rc = inflate(&z, Z_NO_FLUSH);
-        if(rc != Z_OK && rc != Z_STREAM_END) ERROR("Cannot decompress the input stream: rc: " << rc << ")");
+        if (rc != Z_OK && rc != Z_STREAM_END)
+            ERROR("Cannot decompress the input stream: rc: " << rc << ")");
 
         // there is not enough space to load the whole block in the buffer
         done = z.avail_out == 0 || rc == Z_STREAM_END;
 
-        if(z.avail_out == 0 && rc != Z_STREAM_END){
+        if (z.avail_out == 0 && rc != Z_STREAM_END)
+        {
             m_handle.seekg(handle_pos_start);
-        } else if (rc == Z_STREAM_END){
+        }
+        else if (rc == Z_STREAM_END)
+        {
             assert((output_buffer_sz - z.avail_out) % (3 * sizeof(uint64_t)) == 0);
             num_edges_loaded = (output_buffer_sz - z.avail_out) / (3 * sizeof(uint64_t));
             m_handle.seekg(static_cast<int64_t>(handle_pos_last) + (input_stream_sz - z.avail_in), ios_base::beg);
@@ -313,7 +384,7 @@ uint64_t EdgeLoader::load(uint64_t* array, uint64_t num_edges){
     return num_edges_loaded;
 }
 
-}
+} // namespace graphlog
 
 /*****************************************************************************
  *                                                                           *
@@ -321,27 +392,36 @@ uint64_t EdgeLoader::load(uint64_t* array, uint64_t num_edges){
  *                                                                           *
  *****************************************************************************/
 
-namespace graphlog {
+namespace graphlog
+{
 
-EdgeBlockReader::EdgeBlockReader() : m_ptr_block(), m_position(0), m_num_edges(0) {
+EdgeBlockReader::EdgeBlockReader()
+    : m_ptr_block()
+    , m_position(0)
+    , m_num_edges(0)
+{}
 
+EdgeBlockReader::EdgeBlockReader(shared_ptr<uint64_t[]> block, uint64_t num_edges)
+    : m_ptr_block(block)
+    , m_position(0)
+    , m_num_edges(num_edges)
+{}
+
+EdgeBlockReader::~EdgeBlockReader()
+{ /* nop */
 }
 
-EdgeBlockReader::EdgeBlockReader(shared_ptr<uint64_t[]> block, uint64_t num_edges) : m_ptr_block(block), m_position(0), m_num_edges(num_edges){
-
-}
-
-EdgeBlockReader::~EdgeBlockReader(){
-    /* nop */
-}
-
-bool EdgeBlockReader::read_edge(graph::WeightedEdge& edge){
-    if(m_position >= m_num_edges){
+bool EdgeBlockReader::read_edge(graph::WeightedEdge & edge)
+{
+    if (m_position >= m_num_edges)
+    {
         return false;
-    } else {
-        uint64_t* __restrict sources = m_ptr_block.get();
-        uint64_t* __restrict destinations = sources + m_num_edges;
-        double* __restrict weights = reinterpret_cast<double*>(destinations + m_num_edges);
+    }
+    else
+    {
+        uint64_t * __restrict sources = m_ptr_block.get();
+        uint64_t * __restrict destinations = sources + m_num_edges;
+        double * __restrict weights = reinterpret_cast<double *>(destinations + m_num_edges);
 
         edge.m_source = sources[m_position];
         edge.m_destination = destinations[m_position];
@@ -352,34 +432,41 @@ bool EdgeBlockReader::read_edge(graph::WeightedEdge& edge){
     }
 }
 
-bool EdgeBlockReader::has_next() const {
+bool EdgeBlockReader::has_next() const
+{
     return m_position < m_num_edges;
 }
 
-} // namespace
+} // namespace graphlog
 
 /*****************************************************************************
  *                                                                           *
  *  EdgeBlockLoader                                                          *
  *                                                                           *
  *****************************************************************************/
-namespace graphlog {
+namespace graphlog
+{
 
-EdgeBlockLoader::EdgeBlockLoader(std::fstream& handle, uint64_t block_size_bytes) : m_loader(handle), m_max_num_edges(block_size_bytes / (3* sizeof(uint64_t))) {
-    if(block_size_bytes % (3*sizeof(uint64_t)) != 0) INVALID_ARGUMENT("Invalid block size: " << block_size_bytes);
+EdgeBlockLoader::EdgeBlockLoader(std::fstream & handle, uint64_t block_size_bytes)
+    : m_loader(handle)
+    , m_max_num_edges(block_size_bytes / (3 * sizeof(uint64_t)))
+{
+    if (block_size_bytes % (3 * sizeof(uint64_t)) != 0)
+        INVALID_ARGUMENT("Invalid block size: " << block_size_bytes);
     m_ptr_buffer.reset(new uint64_t[3 * m_max_num_edges]);
 }
 
-EdgeBlockLoader::~EdgeBlockLoader(){
-    /* nop */
+EdgeBlockLoader::~EdgeBlockLoader()
+{ /* nop */
 }
 
-EdgeBlockReader EdgeBlockLoader::load(){
+EdgeBlockReader EdgeBlockLoader::load()
+{
     uint64_t num_edges = m_loader.load(m_ptr_buffer.get(), m_max_num_edges);
     return EdgeBlockReader{m_ptr_buffer, num_edges};
 }
 
-} // namespace
+} // namespace graphlog
 
 /*****************************************************************************
  *                                                                           *
@@ -387,38 +474,46 @@ EdgeBlockReader EdgeBlockLoader::load(){
  *                                                                           *
  *****************************************************************************/
 
-namespace graphlog {
+namespace graphlog
+{
 
-EdgeReader::EdgeReader(const std::string& path) : EdgeReader(path, parse_properties(path)) {
+EdgeReader::EdgeReader(const std::string & path)
+    : EdgeReader(path, parse_properties(path))
+{}
 
-}
-
-EdgeReader::EdgeReader(const std::string& path, Properties properties) : m_loader(m_handle, stoull(properties["internal.edges.block_size"])) {
+EdgeReader::EdgeReader(const std::string & path, Properties properties)
+    : m_loader(m_handle, stoull(properties["internal.edges.block_size"]))
+{
     m_handle.open(path, ios_base::in | ios_base::binary);
     set_marker(properties, m_handle, Section::EDGES);
     m_reader = m_loader.load();
 }
 
-EdgeReader::~EdgeReader(){
+EdgeReader::~EdgeReader()
+{
     m_handle.close();
 }
 
-bool EdgeReader::read(graph::WeightedEdge& edge){
+bool EdgeReader::read(graph::WeightedEdge & edge)
+{
     return read_edge(edge);
 }
 
-bool EdgeReader::read_edge(graph::WeightedEdge& edge){
-    if(!m_reader.has_next()){ // retrieve the next block of edges
+bool EdgeReader::read_edge(graph::WeightedEdge & edge)
+{
+    if (!m_reader.has_next())
+    { // retrieve the next block of edges
         m_reader = m_loader.load();
     }
 
     return m_reader.read_edge(edge);
 }
 
-bool EdgeReader::is_directed() const {
+bool EdgeReader::is_directed() const
+{
     return false;
 }
 
-} // namespace
+} // namespace graphlog
 
-} // namespace
+} // namespace gfe::reader

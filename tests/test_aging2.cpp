@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
-
 #include <cstdlib> // getenv
 #include <memory>
 #include <unordered_set>
@@ -24,6 +22,7 @@
 #include "common/filesystem.hpp"
 #include "experiment/aging2_experiment.hpp"
 #include "graph/edge_stream.hpp"
+#include "gtest/gtest.h"
 #include "library/baseline/adjacency_list.hpp"
 
 using namespace gfe::experiment;
@@ -31,8 +30,12 @@ using namespace gfe::graph;
 using namespace gfe::library;
 using namespace std;
 
-static
-void validate_aging2(bool is_directed, const string& path_graph, const string& path_log, uint64_t exp_granularity = 1024){
+static void validate_aging2(
+    bool is_directed,
+    const string & path_graph,
+    const string & path_log,
+    uint64_t exp_granularity = 1024)
+{
     auto stream = make_shared<WeightedEdgeStream>(path_graph);
     auto adjlist = make_shared<AdjacencyList>(is_directed);
 
@@ -47,11 +50,14 @@ void validate_aging2(bool is_directed, const string& path_graph, const string& p
 
     stream = make_shared<WeightedEdgeStream>(path_graph);
     unordered_set<uint64_t> vertices;
-    for(uint64_t i = 0, sz = stream->num_edges(); i < sz; i++){
+    for (uint64_t i = 0, sz = stream->num_edges(); i < sz; i++)
+    {
         auto edge = stream->get(i);
         ASSERT_TRUE(adjlist->has_vertex(edge.source()));
         ASSERT_TRUE(adjlist->has_vertex(edge.destination()));
-//        cout << "check edge: " << edge.source() << ", destination: " << edge.destination() << ", weight: " << edge.weight() << endl;
+        //        cout << "check edge: " << edge.source() << ", destination: "
+        //        << edge.destination() << ", weight: " << edge.weight() <<
+        //        endl;
         ASSERT_TRUE(adjlist->has_edge(edge.source(), edge.destination()));
         double weight = adjlist->get_weight(edge.source(), edge.destination());
         ASSERT_DOUBLE_EQ(weight, edge.weight());
@@ -64,9 +70,11 @@ void validate_aging2(bool is_directed, const string& path_graph, const string& p
     ASSERT_EQ(vertices.size(), adjlist->num_vertices());
 }
 
-
-TEST(Aging2, Undirected){
-    const string path_graph = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.properties";
-    const string path_log = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.graphlog";
+TEST(Aging2, Undirected)
+{
+    const string path_graph
+        = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.properties";
+    const string path_log
+        = common::filesystem::directory_executable() + "/graphs/ldbc_graphalytics/example-undirected.graphlog";
     validate_aging2(/* is directed ? */ false, path_graph, path_log, 4);
 }

@@ -20,6 +20,7 @@
 // Define the global memory pool used by the LLAMA allocators
 ll_memory_pool __w_pool;
 
-// sometimes I'm referring them as singular, sometimes as plural. Let's use a const for peace of mind
+// sometimes I'm referring them as singular, sometimes as plural. Let's use a
+// const for peace of mind
 char const * const g_llama_property_names = "names";
 char const * const g_llama_property_weights = "weights";

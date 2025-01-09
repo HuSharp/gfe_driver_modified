@@ -3,6 +3,7 @@
 /.project
 /.settings/
 /eclipse_symbols.xml
+/logs/
 
 # IntelliJ IDEA / CLion project files
 *.idea

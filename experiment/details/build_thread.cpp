@@ -30,12 +30,19 @@ using namespace std;
  *                                                                           *
  *****************************************************************************/
 //#define DEBUG
-namespace gfe { extern mutex _log_mutex [[maybe_unused]]; }
-#define COUT_DEBUG_FORCE(msg) { std::scoped_lock<std::mutex> lock{::gfe::_log_mutex}; std::cout << "[BuildThread::" << __FUNCTION__ << "] " << msg << std::endl; }
+namespace gfe
+{
+extern mutex _log_mutex [[maybe_unused]];
+}
+#define COUT_DEBUG_FORCE(msg)                                                      \
+    {                                                                              \
+        std::scoped_lock<std::mutex> lock{::gfe::_log_mutex};                      \
+        std::cout << "[BuildThread::" << __FUNCTION__ << "] " << msg << std::endl; \
+    }
 #if defined(DEBUG)
-    #define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
+#define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
 #else
-    #define COUT_DEBUG(msg)
+#define COUT_DEBUG(msg)
 #endif
 
 /*****************************************************************************
@@ -43,33 +50,44 @@ namespace gfe { extern mutex _log_mutex [[maybe_unused]]; }
  * BuildThread impl                                                          *
  *                                                                           *
  *****************************************************************************/
-namespace gfe::experiment::details {
+namespace gfe::experiment::details
+{
 
-BuildThread::BuildThread(std::shared_ptr<gfe::library::UpdateInterface> interface, int thread_id, std::chrono::milliseconds frequency) :
-    m_interface(interface), m_thread_id(thread_id), m_frequency(frequency){
+BuildThread::BuildThread(
+    std::shared_ptr<gfe::library::UpdateInterface> interface,
+    int thread_id,
+    std::chrono::milliseconds frequency)
+    : m_interface(interface)
+    , m_thread_id(thread_id)
+    , m_frequency(frequency)
+{
     m_terminate = true; // reset by the background thread
-    if(m_frequency > 0ms){ // otherwise, never invoke #build()
+    if (m_frequency > 0ms)
+    { // otherwise, never invoke #build()
         start();
     }
 }
 
-void BuildThread::start(){
+void BuildThread::start()
+{
     COUT_DEBUG("waiting for the service to start...");
-    m_thread = thread{ &BuildThread::main_thread, this };
+    m_thread = thread{&BuildThread::main_thread, this};
 
     unique_lock<mutex> lock(m_mutex);
-    m_condvar.wait(lock, [this](){ return !m_terminate; });
+    m_condvar.wait(lock, [this]() { return !m_terminate; });
     COUT_DEBUG("ack started");
 }
 
-
-BuildThread::~BuildThread(){
+BuildThread::~BuildThread()
+{
     stop();
 }
 
-void BuildThread::stop(){
+void BuildThread::stop()
+{
     unique_lock<mutex> lock(m_mutex);
-    if(!m_terminate){
+    if (!m_terminate)
+    {
         COUT_DEBUG("waiting for the service to stop...");
         m_terminate = true;
         lock.unlock();
@@ -77,13 +95,17 @@ void BuildThread::stop(){
         m_thread.join();
         m_condvar.notify_all();
         COUT_DEBUG("ack terminated");
-    } else { // in case multiple threads invoked #stop
-        m_condvar.wait(lock, [this](){ return !m_thread.joinable(); });
+    }
+    else
+    { // in case multiple threads invoked #stop
+        m_condvar.wait(lock, [this]() { return !m_thread.joinable(); });
     }
 }
 
-void BuildThread::main_thread(){
-    COUT_DEBUG("service started, thread_id: " << m_thread_id << ", frequency: " << common::DurationQuantity(m_frequency));
+void BuildThread::main_thread()
+{
+    COUT_DEBUG(
+        "service started, thread_id: " << m_thread_id << ", frequency: " << common::DurationQuantity(m_frequency));
     common::concurrency::set_thread_name("build service");
 
     unique_lock<mutex> lock(m_mutex);
@@ -93,9 +115,10 @@ void BuildThread::main_thread(){
 
     m_interface->on_thread_init(m_thread_id);
 
-    do {
+    do
+    {
         lock.lock();
-        m_condvar.wait_for(lock, m_frequency, [this](){ return m_terminate; });
+        m_condvar.wait_for(lock, m_frequency, [this]() { return m_terminate; });
         terminate = m_terminate;
         lock.unlock();
 
@@ -103,11 +126,11 @@ void BuildThread::main_thread(){
         COUT_DEBUG("#build, num invocations: " << m_num_invocations << ", terminate: " << boolalpha << terminate);
         m_interface->build();
         m_num_invocations++;
-    } while(!terminate);
+    } while (!terminate);
 
     m_interface->on_thread_destroy(m_thread_id);
 
     COUT_DEBUG("service terminated");
 }
 
-} // namespace
+} // namespace gfe::experiment::details

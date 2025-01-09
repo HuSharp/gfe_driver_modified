@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "stinger.hpp"
-
 #include <algorithm>
 #include <chrono>
 #include <cinttypes>
@@ -27,6 +25,7 @@
 #include <thread>
 
 #include "common/system.hpp"
+#include "stinger.hpp"
 #include "stinger_core/stinger.h"
 extern "C" {
 #include "stinger_alg/weakly_connected_components.h"
@@ -37,7 +36,7 @@ using namespace libcuckoo;
 using namespace std;
 
 // Macros
-#define STINGER reinterpret_cast<struct stinger*>(m_stinger_graph)
+#define STINGER reinterpret_cast<struct stinger *>(m_stinger_graph)
 #undef CURRENT_ERROR_TYPE
 #define CURRENT_ERROR_TYPE ::gfe::library::StingerError
 
@@ -48,13 +47,17 @@ using namespace std;
  *****************************************************************************/
 //#define DEBUG
 extern mutex _log_mutex [[maybe_unused]];
-#define COUT_DEBUG_FORCE(msg) { scoped_lock<mutex> lock(::_log_mutex); std::cout << "[Stinger::" << __FUNCTION__ << "] [" << common::concurrency::get_thread_id() << "] " << msg << std::endl; }
+#define COUT_DEBUG_FORCE(msg)                                                                                     \
+    {                                                                                                             \
+        scoped_lock<mutex> lock(::_log_mutex);                                                                    \
+        std::cout << "[Stinger::" << __FUNCTION__ << "] [" << common::concurrency::get_thread_id() << "] " << msg \
+                  << std::endl;                                                                                   \
+    }
 #if defined(DEBUG)
-    #define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
+#define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
 #else
-    #define COUT_DEBUG(msg)
+#define COUT_DEBUG(msg)
 #endif
-
 
 /******************************************************************************
  *                                                                            *
@@ -62,14 +65,18 @@ extern mutex _log_mutex [[maybe_unused]];
  *                                                                            *
  ******************************************************************************/
 // dump the content to the given file
-static void save(vector<pair<uint64_t, int64_t>>& result, const char* dump2file){
-    if(dump2file == nullptr) return; // nop
+static void save(vector<pair<uint64_t, int64_t>> & result, const char * dump2file)
+{
+    if (dump2file == nullptr)
+        return; // nop
     COUT_DEBUG("save the results to: " << dump2file)
 
     fstream handle(dump2file, ios_base::out);
-    if(!handle.good()) ERROR("Cannot save the result to `" << dump2file << "'");
+    if (!handle.good())
+        ERROR("Cannot save the result to `" << dump2file << "'");
 
-    for(auto p : result) {
+    for (auto p : result)
+    {
         handle << p.first << " " << p.second << "\n";
     }
 
@@ -81,19 +88,26 @@ static void save(vector<pair<uint64_t, int64_t>>& result, const char* dump2file)
  *  Weakly connected components                                               *
  *                                                                            *
  *****************************************************************************/
-namespace gfe::library {
+namespace gfe::library
+{
 
-void Stinger::wcc(const char* dump2file) {
+void Stinger::wcc(const char * dump2file)
+{
     // ignore the timeout as we use the impl~ from stinger
 
     int64_t nv = stinger_max_nv(STINGER);
     COUT_DEBUG("nv: " << nv);
-    auto ptr_component_map = make_unique<int64_t[]>(nv); int64_t* component_map = ptr_component_map.get();
-    parallel_shiloach_vishkin_components_of_type(STINGER, component_map, /* type, ignore */ 0); // already implemented in Stinger
+    auto ptr_component_map = make_unique<int64_t[]>(nv);
+    int64_t * component_map = ptr_component_map.get();
+    parallel_shiloach_vishkin_components_of_type(
+        STINGER,
+        component_map,
+        /* type, ignore */ 0); // already implemented in Stinger
 
     // store the final results (if required)
-    auto result = to_external_ids(component_map, get_max_num_mappings()); // convert the internal logical IDs into the external IDs
+    auto result = to_external_ids(component_map, get_max_num_mappings()); // convert the internal logical
+        // IDs into the external IDs
     save(result, dump2file);
 }
 
-} // namespace
+} // namespace gfe::library

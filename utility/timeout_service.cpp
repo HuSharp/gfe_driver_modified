@@ -23,22 +23,27 @@
 
 using namespace std;
 
-namespace gfe::utility {
+namespace gfe::utility
+{
 
 /*****************************************************************************
  *                                                                           *
  *  TimeoutService                                                           *
  *                                                                           *
  *****************************************************************************/
-void TimeoutService::start() {
-    if(m_budget == 0s) return; // nop, the timer will never expire
+void TimeoutService::start()
+{
+    if (m_budget == 0s)
+        return; // nop, the timer will never expire
 
     assert(!m_background_thread.joinable() && "A background thread is already present");
     m_background_thread = thread(&TimeoutService::main_thread, this);
 }
 
-void TimeoutService::stop(){
-    if(m_budget == 0s) return; // nop, never started
+void TimeoutService::stop()
+{
+    if (m_budget == 0s)
+        return; // nop, never started
 
     {
         scoped_lock<mutex> lock(m_mutex);
@@ -49,16 +54,18 @@ void TimeoutService::stop(){
     m_background_thread.join(); // wait for termination
 }
 
-void TimeoutService::main_thread(){
+void TimeoutService::main_thread()
+{
     bool terminate = false;
-    while(!terminate){
+    while (!terminate)
+    {
         unique_lock<mutex> lock(m_mutex);
-        m_condvar.wait_for(lock, 1s, [this](){ return m_terminate; });
+        m_condvar.wait_for(lock, 1s, [this]() { return m_terminate; });
         terminate = m_terminate;
         lock.unlock();
 
-        m_is_timeout = ( clock_t::now() - m_start ) > m_budget;
+        m_is_timeout = (clock_t::now() - m_start) > m_budget;
     }
 }
 
-} // namespace
+} // namespace gfe::utility

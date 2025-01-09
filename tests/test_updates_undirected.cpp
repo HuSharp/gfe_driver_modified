@@ -25,13 +25,12 @@
 #include <unordered_set>
 #include <vector>
 
-#include "gtest/gtest.h"
-#include "third-party/libcuckoo/cuckoohash_map.hh"
-
 #include "configuration.hpp"
 #include "graph/edge_stream.hpp"
-#include "library/interface.hpp"
+#include "gtest/gtest.h"
 #include "library/baseline/adjacency_list.hpp"
+#include "library/interface.hpp"
+#include "third-party/libcuckoo/cuckoohash_map.hh"
 
 #if defined(HAVE_LLAMA)
 #include "library/llama/llama_class.hpp"
@@ -57,21 +56,28 @@
 #include "library/sortledton/sortledton_driver.hpp"
 #endif
 
-
 using namespace gfe::library;
 using namespace std;
 
-static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint64_t max_vector_id){
+static std::unique_ptr<gfe::graph::WeightedEdgeStream> generate_edge_stream(uint64_t max_vector_id)
+{
     vector<gfe::graph::WeightedEdge> edges;
-    for(uint64_t i = 1; i < max_vector_id; i++){
-        for(uint64_t j = i + 2; j < max_vector_id; j+=2){
+    for (uint64_t i = 1; i < max_vector_id; i++)
+    {
+        for (uint64_t j = i + 2; j < max_vector_id; j += 2)
+        {
             edges.push_back(gfe::graph::WeightedEdge{i, j, static_cast<double>(j * 1000 + i)});
         }
     }
     return make_unique<gfe::graph::WeightedEdgeStream>(edges);
 }
 
-static void sequential(shared_ptr<UpdateInterface> interface, bool edge_deletions = true, bool vertex_deletions = true, uint64_t num_vertices = 1024) {
+static void sequential(
+    shared_ptr<UpdateInterface> interface,
+    bool edge_deletions = true,
+    bool vertex_deletions = true,
+    uint64_t num_vertices = 1024)
+{
     interface->on_main_init(1);
     interface->on_thread_init(0);
 
@@ -79,15 +85,19 @@ static void sequential(shared_ptr<UpdateInterface> interface, bool edge_deletion
     unordered_set<uint64_t> vertices_contained;
     auto edge_list = generate_edge_stream(num_vertices);
     edge_list->permute();
-    for(uint64_t i =0, sz = edge_list->num_edges(); i < sz; i++){
+    for (uint64_t i = 0, sz = edge_list->num_edges(); i < sz; i++)
+    {
         auto edge = edge_list->get(i);
         auto p1 = vertices_contained.insert(edge.source());
-        if(p1.second) interface->add_vertex(edge.source());
+        if (p1.second)
+            interface->add_vertex(edge.source());
         auto p2 = vertices_contained.insert(edge.destination());
-        if(p2.second) interface->add_vertex(edge.destination());
+        if (p2.second)
+            interface->add_vertex(edge.destination());
 
         // insert sometimes as <i, j> and sometimes as <j, i>
-        if((edge.m_source + edge.m_destination) % 2 == 0){
+        if ((edge.m_source + edge.m_destination) % 2 == 0)
+        {
             swap(edge.m_source, edge.m_destination);
         }
         bool added = interface->add_edge(edge);
@@ -99,9 +109,12 @@ static void sequential(shared_ptr<UpdateInterface> interface, bool edge_deletion
 
     // check all edges have been inserted
     ASSERT_EQ(interface->num_edges(), edge_list->num_edges());
-    for(uint64_t i = 1; i < edge_list->max_vertex_id(); i++){
-        for(uint64_t j = i +1; j < edge_list->max_vertex_id(); j++){
-            if((i + j) % 2 == 0){ // the edge should be present
+    for (uint64_t i = 1; i < edge_list->max_vertex_id(); i++)
+    {
+        for (uint64_t j = i + 1; j < edge_list->max_vertex_id(); j++)
+        {
+            if ((i + j) % 2 == 0)
+            { // the edge should be present
                 ASSERT_TRUE(interface->has_edge(j, i)); // because it's undirected
                 ASSERT_TRUE(interface->has_edge(i, j));
 
@@ -109,20 +122,25 @@ static void sequential(shared_ptr<UpdateInterface> interface, bool edge_deletion
 
                 ASSERT_EQ(interface->get_weight(i, j), expected_value);
                 ASSERT_EQ(interface->get_weight(j, i), expected_value);
-            } else {
+            }
+            else
+            {
                 ASSERT_FALSE(interface->has_edge(i, j));
                 ASSERT_FALSE(interface->has_edge(j, i));
             }
         }
     }
 
-    if(edge_deletions){ // remove all edges from the graph
+    if (edge_deletions)
+    { // remove all edges from the graph
         edge_list->permute(gfe::configuration().seed() + 99942341);
-        for(uint64_t i =0, sz = edge_list->num_edges(); i < sz; i++){
+        for (uint64_t i = 0, sz = edge_list->num_edges(); i < sz; i++)
+        {
             auto edge = edge_list->get(i).edge();
 
             // remove sometimes as <i, j> and sometimes as <j, i>
-            if((edge.m_source + edge.m_destination) % 3 == 0){
+            if ((edge.m_source + edge.m_destination) % 3 == 0)
+            {
                 swap(edge.m_source, edge.m_destination);
             }
             interface->remove_edge(edge);
@@ -131,16 +149,20 @@ static void sequential(shared_ptr<UpdateInterface> interface, bool edge_deletion
         interface->build(); // flush all deletions in LLAMA
         ASSERT_EQ(interface->num_edges(), 0);
 
-        for(uint64_t i = 1; i < edge_list->max_vertex_id(); i++){
-            for(uint64_t j = i +1; j < edge_list->max_vertex_id(); j++){
+        for (uint64_t i = 1; i < edge_list->max_vertex_id(); i++)
+        {
+            for (uint64_t j = i + 1; j < edge_list->max_vertex_id(); j++)
+            {
                 ASSERT_FALSE(interface->has_edge(i, j));
                 ASSERT_FALSE(interface->has_edge(j, i));
             }
         }
 
         // remove all vertices
-        if(vertex_deletions){
-            for(uint64_t vertex_id = 1; vertex_id <= edge_list->max_vertex_id(); vertex_id++){
+        if (vertex_deletions)
+        {
+            for (uint64_t vertex_id = 1; vertex_id <= edge_list->max_vertex_id(); vertex_id++)
+            {
                 interface->remove_vertex(vertex_id);
             }
             interface->build(); // flush all changes
@@ -153,14 +175,20 @@ static void sequential(shared_ptr<UpdateInterface> interface, bool edge_deletion
     interface->on_main_destroy();
 }
 
-// Whether execute the tests inside #parallel() with multiple threads. Useful for GraphOne as the implementation of
-// get weight is particularly slow
+// Whether execute the tests inside #parallel() with multiple threads. Useful
+// for GraphOne as the implementation of get weight is particularly slow
 static bool parallel_check = false;
 
-// Whether vertex deletions are supported by the interface. All libraries support them (more or less), but GraphOne
+// Whether vertex deletions are supported by the interface. All libraries
+// support them (more or less), but GraphOne
 static bool parallel_vertex_deletions = true;
 
-static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertices, int num_threads = 8, bool deletions = true) {
+static void parallel(
+    shared_ptr<UpdateInterface> interface,
+    uint64_t num_vertices,
+    int num_threads = 8,
+    bool deletions = true)
+{
     assert(num_threads > 0);
     interface->on_main_init(num_threads);
 
@@ -169,23 +197,30 @@ static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertice
     shared_ptr<gfe::graph::WeightedEdgeStream> edge_list = generate_edge_stream(num_vertices);
     edge_list->permute();
 
-    auto routine_insert_edges = [interface, edge_list, &vertices](int thread_id, uint64_t start, uint64_t length){
+    auto routine_insert_edges = [interface, edge_list, &vertices](int thread_id, uint64_t start, uint64_t length) {
         interface->on_thread_init(thread_id);
 
-        for(int64_t pos = start, end = start + length; pos < end; pos++){
+        for (int64_t pos = start, end = start + length; pos < end; pos++)
+        {
             auto edge = edge_list->get(pos);
 
-            if(vertices.insert(edge.source(), true)) interface->add_vertex(edge.source());
-            if(vertices.insert(edge.destination(), true)) interface->add_vertex(edge.destination());
+            if (vertices.insert(edge.source(), true))
+                interface->add_vertex(edge.source());
+            if (vertices.insert(edge.destination(), true))
+                interface->add_vertex(edge.destination());
 
             // insert sometimes as <i, j> and sometimes as <j, i>
-            if((edge.m_source + edge.m_destination) % 2 == 0){
+            if ((edge.m_source + edge.m_destination) % 2 == 0)
+            {
                 swap(edge.m_source, edge.m_destination);
             }
 
-            // the function returns true if the edge has been inserted. Repeat the loop if it cannot insert the edge as one of
-            // the vertices is still being inserted by another thread
-            while( ! interface->add_edge(edge) ) { /* nop */ } ;
+            // the function returns true if the edge has been inserted. Repeat the
+            // loop if it cannot insert the edge as one of the vertices is still being
+            // inserted by another thread
+            while (!interface->add_edge(edge))
+            { /* nop */
+            };
         }
 
         interface->on_thread_destroy(thread_id);
@@ -196,33 +231,40 @@ static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertice
 
     vector<thread> threads;
     int64_t start = 0;
-    for(int thread_id = 0; thread_id < num_threads; thread_id ++){
+    for (int thread_id = 0; thread_id < num_threads; thread_id++)
+    {
         int64_t length = edges_per_thread + (thread_id < odd_threads);
         threads.emplace_back(routine_insert_edges, thread_id, start, length);
         start += length;
     }
-    for(auto& t : threads) t.join();
+    for (auto & t : threads)
+        t.join();
     threads.clear();
 
     interface->on_thread_init(0);
     interface->build();
-    //interface->dump();
+    // interface->dump();
     interface->on_thread_destroy(0);
 
     // check all edges have been inserted
-    auto routine_check_edges = [interface, edge_list](int thread_id, int num_threads){
+    auto routine_check_edges = [interface, edge_list](int thread_id, int num_threads) {
         interface->on_thread_init(thread_id);
         ASSERT_EQ(interface->num_edges(), edge_list->num_edges());
-        for(uint64_t i = thread_id +1; i < edge_list->max_vertex_id(); i += num_threads){
-            for(uint64_t j = i +1; j < edge_list->max_vertex_id(); j++){
-                if((i + j) % 2 == 0){ // the edge should be present
+        for (uint64_t i = thread_id + 1; i < edge_list->max_vertex_id(); i += num_threads)
+        {
+            for (uint64_t j = i + 1; j < edge_list->max_vertex_id(); j++)
+            {
+                if ((i + j) % 2 == 0)
+                { // the edge should be present
                     ASSERT_TRUE(interface->has_edge(i, j));
-                    //cout << "check " << j << " -> " << i << endl;
+                    // cout << "check " << j << " -> " << i << endl;
                     ASSERT_TRUE(interface->has_edge(j, i));
                     uint32_t expected_value = j * 1000 + i;
                     ASSERT_EQ(interface->get_weight(i, j), expected_value);
                     ASSERT_EQ(interface->get_weight(j, i), expected_value);
-                } else {
+                }
+                else
+                {
                     ASSERT_FALSE(interface->has_edge(i, j));
                     ASSERT_FALSE(interface->has_edge(j, i));
                 }
@@ -232,24 +274,28 @@ static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertice
     };
 
     int num_threads_check = parallel_check ? num_threads : /* sequential */ 1;
-    for(int thread_id = 0; thread_id < num_threads_check; thread_id ++){
+    for (int thread_id = 0; thread_id < num_threads_check; thread_id++)
+    {
         threads.emplace_back(routine_check_edges, thread_id, num_threads_check);
     }
-    for(auto& t : threads) t.join();
+    for (auto & t : threads)
+        t.join();
     threads.clear();
 
-
-    if(deletions){ // remove all edges from the graph
+    if (deletions)
+    { // remove all edges from the graph
         edge_list->permute(gfe::configuration().seed() + 99942341);
 
-        auto routine_remove_edges = [interface, edge_list](int thread_id, uint64_t start, uint64_t length){
+        auto routine_remove_edges = [interface, edge_list](int thread_id, uint64_t start, uint64_t length) {
             interface->on_thread_init(thread_id);
 
-            for(int64_t pos = start, end = start + length; pos < end; pos++){
+            for (int64_t pos = start, end = start + length; pos < end; pos++)
+            {
                 auto edge = edge_list->get(pos).edge();
 
                 // remove sometimes as <i, j> and sometimes as <j, i>
-                if((edge.m_source + edge.m_destination) % 3 == 0){
+                if ((edge.m_source + edge.m_destination) % 3 == 0)
+                {
                     swap(edge.m_source, edge.m_destination);
                 }
 
@@ -260,31 +306,37 @@ static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertice
         };
         threads.clear();
         start = 0;
-        for(int thread_id = 0; thread_id < num_threads; thread_id ++){
+        for (int thread_id = 0; thread_id < num_threads; thread_id++)
+        {
             uint64_t length = edges_per_thread + (thread_id < odd_threads);
             threads.emplace_back(routine_remove_edges, thread_id, start, length);
             start += length;
         }
-        for(auto& t : threads) t.join();
+        for (auto & t : threads)
+            t.join();
 
         // check all edges have been removed
         interface->on_thread_init(0);
         interface->build();
         ASSERT_EQ(interface->num_edges(), 0);
-        for(uint64_t i = 1; i < edge_list->max_vertex_id(); i++){
-            for(uint64_t j = i +1; j < edge_list->max_vertex_id(); j++){
+        for (uint64_t i = 1; i < edge_list->max_vertex_id(); i++)
+        {
+            for (uint64_t j = i + 1; j < edge_list->max_vertex_id(); j++)
+            {
                 ASSERT_FALSE(interface->has_edge(i, j));
                 ASSERT_FALSE(interface->has_edge(j, i));
             }
         }
 
         // remove all vertices from the graph
-        if(parallel_vertex_deletions){
-            auto routine_remove_vertices = [interface, edge_list](int thread_id, uint64_t start, uint64_t length){
+        if (parallel_vertex_deletions)
+        {
+            auto routine_remove_vertices = [interface, edge_list](int thread_id, uint64_t start, uint64_t length) {
                 interface->on_thread_init(thread_id);
 
-                for(int64_t pos = start, end = start + length; pos < end; pos++){
-                    interface->remove_vertex(pos +1);
+                for (int64_t pos = start, end = start + length; pos < end; pos++)
+                {
+                    interface->remove_vertex(pos + 1);
                 }
 
                 interface->on_thread_destroy(thread_id);
@@ -293,12 +345,14 @@ static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertice
             odd_threads = edge_list->max_vertex_id() % num_threads;
             threads.clear();
             start = 0;
-            for(int thread_id = 0; thread_id < num_threads; thread_id ++){
+            for (int thread_id = 0; thread_id < num_threads; thread_id++)
+            {
                 uint64_t length = vertices_per_thread + (thread_id < odd_threads);
                 threads.emplace_back(routine_remove_vertices, thread_id, start, length);
                 start += length;
             }
-            for(auto& t : threads) t.join();
+            for (auto & t : threads)
+                t.join();
 
             interface->build();
             ASSERT_EQ(interface->num_vertices(), 0);
@@ -310,7 +364,8 @@ static void parallel(shared_ptr<UpdateInterface> interface, uint64_t num_vertice
     interface->on_main_destroy();
 }
 
-TEST(AdjacencyList, UpdatesUndirected){
+TEST(AdjacencyList, UpdatesUndirected)
+{
     auto adjlist = make_shared<AdjacencyList>(/* directed */ false);
     sequential(adjlist);
     parallel(adjlist, 128);
@@ -318,17 +373,21 @@ TEST(AdjacencyList, UpdatesUndirected){
 }
 
 #if defined(HAVE_LLAMA)
-TEST(LLAMA, UpdatesUndirected){
+TEST(LLAMA, UpdatesUndirected)
+{
     auto llama = make_shared<LLAMAClass>(/* directed */ false);
     sequential(llama, /* perform deletions ? */ false);
-    llama = make_shared<LLAMAClass>(/* directed */ false); // reinit as we didn't perform the deletions in `sequential'
+    llama = make_shared<LLAMAClass>(
+        /* directed */ false); // reinit as we didn't perform the deletions in
+    // `sequential'
     parallel(llama, 128);
     parallel(llama, 1024);
 }
 #endif
 
 #if defined(HAVE_STINGER)
-TEST(Stinger, UpdatesUndirected) {
+TEST(Stinger, UpdatesUndirected)
+{
     parallel_vertex_deletions = false; // global, enable vertex deletions
 
     auto stinger = make_shared<Stinger>(/* directed */ false);
@@ -341,11 +400,18 @@ TEST(Stinger, UpdatesUndirected) {
 #endif
 
 #if defined(HAVE_GRAPHONE)
-TEST(GraphOne, UpdatesUndirected){
+TEST(GraphOne, UpdatesUndirected)
+{
     parallel_check = true; // global, check the weights in parallel
     parallel_vertex_deletions = false; // global, disable vertex deletions
 
-    auto graphone = make_shared<GraphOne>(/* directed ? */ false, /* vtx dict ? */ true, /* blind writes ? */ false, /* ignore build = */ false, /* GAP impl ? */ false, 1ull << 24);
+    auto graphone = make_shared<GraphOne>(
+        /* directed ? */ false,
+        /* vtx dict ? */ true,
+        /* blind writes ? */ false,
+        /* ignore build = */ false,
+        /* GAP impl ? */ false,
+        1ull << 24);
     sequential(graphone, true, false, 16);
     parallel(graphone, 32);
 
@@ -355,7 +421,8 @@ TEST(GraphOne, UpdatesUndirected){
 #endif
 
 #if defined(HAVE_LIVEGRAPH)
-TEST(LiveGraph, UpdatesUndirected) {
+TEST(LiveGraph, UpdatesUndirected)
+{
     parallel_check = true; // global, check the weights in parallel
     parallel_vertex_deletions = true; // global, enable vertex deletions
 
@@ -370,7 +437,8 @@ TEST(LiveGraph, UpdatesUndirected) {
 #endif
 
 #if defined(HAVE_TESEO)
-TEST(Teseo, UpdatesUndirected){
+TEST(Teseo, UpdatesUndirected)
+{
     parallel_check = true; // global, check the weights in parallel
     parallel_vertex_deletions = true; // global, enable vertex deletions
 
@@ -385,7 +453,8 @@ TEST(Teseo, UpdatesUndirected){
 #endif
 
 #if defined(HAVE_SORTLEDTON)
-TEST(Sortledton, UpdatesUndirected){
+TEST(Sortledton, UpdatesUndirected)
+{
     parallel_check = true; // global, check the weights in parallel
     parallel_vertex_deletions = false; // global, enable vertex deletions
 

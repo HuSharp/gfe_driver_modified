@@ -19,12 +19,13 @@
 
 #include <cassert>
 
-#include "configuration.hpp" // LOG
 #include "common/system.hpp"
+#include "configuration.hpp" // LOG
 
 using namespace std;
 
-namespace gfe::experiment::details {
+namespace gfe::experiment::details
+{
 
 /*****************************************************************************
  *                                                                           *
@@ -32,11 +33,14 @@ namespace gfe::experiment::details {
  *                                                                           *
  *****************************************************************************/
 //#define DEBUG
-#define COUT_DEBUG_FORCE(msg) { LOG("[AsyncBatch::" << __FUNCTION__ << "] [" << common::concurrency::get_thread_id() << "] " << msg); }
+#define COUT_DEBUG_FORCE(msg)                                                                                 \
+    {                                                                                                         \
+        LOG("[AsyncBatch::" << __FUNCTION__ << "] [" << common::concurrency::get_thread_id() << "] " << msg); \
+    }
 #if defined(DEBUG)
-    #define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
+#define COUT_DEBUG(msg) COUT_DEBUG_FORCE(msg)
 #else
-    #define COUT_DEBUG(msg)
+#define COUT_DEBUG(msg)
 #endif
 
 /*****************************************************************************
@@ -45,13 +49,25 @@ namespace gfe::experiment::details {
  *                                                                           *
  *****************************************************************************/
 
-AsyncBatch::AsyncBatch(gfe::library::UpdateInterface* interface, int thread_id, int num_batches, int batch_sz) : m_interface(interface), m_batches_sz(num_batches), m_batch_sz(batch_sz), m_thread_id(thread_id) {
-    if(num_batches < 1){ throw std::invalid_argument("num_batches < 1"); }
-    if(batch_sz < 1){ throw std::invalid_argument("batch_sz < 1"); }
+AsyncBatch::AsyncBatch(gfe::library::UpdateInterface * interface, int thread_id, int num_batches, int batch_sz)
+    : m_interface(interface)
+    , m_batches_sz(num_batches)
+    , m_batch_sz(batch_sz)
+    , m_thread_id(thread_id)
+{
+    if (num_batches < 1)
+    {
+        throw std::invalid_argument("num_batches < 1");
+    }
+    if (batch_sz < 1)
+    {
+        throw std::invalid_argument("batch_sz < 1");
+    }
 
-    m_batches = new gfe::library::UpdateInterface::SingleUpdate*[m_batches_sz];
+    m_batches = new gfe::library::UpdateInterface::SingleUpdate *[m_batches_sz];
     m_batches_num_entries = new size_t[m_batches_sz]();
-    for(int batch_index = 0; batch_index < m_batches_sz; batch_index++){
+    for (int batch_index = 0; batch_index < m_batches_sz; batch_index++)
+    {
         m_batches[batch_index] = new gfe::library::UpdateInterface::SingleUpdate[m_batch_sz];
     }
 
@@ -59,10 +75,11 @@ AsyncBatch::AsyncBatch(gfe::library::UpdateInterface* interface, int thread_id, 
     unique_lock<mutex> lock(m_thread_mutex);
     m_send_upto = 1; // use to sync with the thread
     m_thread_handle = std::thread(&AsyncBatch::main_thread, this);
-    m_thread_condvar.wait(lock, [this](){ return m_send_upto == 0; });
+    m_thread_condvar.wait(lock, [this]() { return m_send_upto == 0; });
 }
 
-AsyncBatch::~AsyncBatch() {
+AsyncBatch::~AsyncBatch()
+{
     flush(true);
 
     { // wait for the async thread to terminate
@@ -73,14 +90,17 @@ AsyncBatch::~AsyncBatch() {
     m_thread_condvar.notify_all();
     m_thread_handle.join();
 
-    for(int batch_index = 0; batch_index < m_batches_sz; batch_index++){
-        delete[] m_batches[batch_index]; m_batches[batch_index] = nullptr;
+    for (int batch_index = 0; batch_index < m_batches_sz; batch_index++)
+    {
+        delete[] m_batches[batch_index];
+        m_batches[batch_index] = nullptr;
     }
 
-    delete[] m_batches; m_batches = nullptr;
-    delete[] m_batches_num_entries; m_batches_num_entries = nullptr;
+    delete[] m_batches;
+    m_batches = nullptr;
+    delete[] m_batches_num_entries;
+    m_batches_num_entries = nullptr;
 }
-
 
 /*****************************************************************************
  *                                                                           *
@@ -88,7 +108,8 @@ AsyncBatch::~AsyncBatch() {
  *                                                                           *
  *****************************************************************************/
 
-void AsyncBatch::main_thread(){
+void AsyncBatch::main_thread()
+{
     m_interface->on_thread_init(m_thread_id);
 
     { // wake up the ctor that started this thread
@@ -101,29 +122,36 @@ void AsyncBatch::main_thread(){
     bool terminate = false;
     { // wait for a job to be available
         unique_lock<mutex> lock(m_thread_mutex);
-        m_thread_condvar.wait(lock, [this](){ return m_send_upto != 0; });
-        if(m_send_upto == -1){ // terminate
+        m_thread_condvar.wait(lock, [this]() { return m_send_upto != 0; });
+        if (m_send_upto == -1)
+        { // terminate
             m_send_upto = -2;
             terminate = true;
-        } else {
+        }
+        else
+        {
             assert(m_send_upto > 0);
         }
     }
 
-    while(!terminate){
+    while (!terminate)
+    {
         COUT_DEBUG("Process batch at index " << m_send_index << ", size: " << m_batches_num_entries[m_send_index]);
         m_interface->batch(m_batches[m_send_index], m_batches_num_entries[m_send_index], /* force */ true);
-        m_send_index = (m_send_index +1) % m_batches_sz; // next batch to send
+        m_send_index = (m_send_index + 1) % m_batches_sz; // next batch to send
 
         { // wait for the next job
             unique_lock<mutex> lock(m_thread_mutex);
             m_send_upto--; // we just processed a job
             m_thread_condvar.notify_all(); // sync with #flush() after changing m_send_upto
-            m_thread_condvar.wait(lock, [this](){ return m_send_upto != 0; });
-            if(m_send_upto == -1){ // terminate
+            m_thread_condvar.wait(lock, [this]() { return m_send_upto != 0; });
+            if (m_send_upto == -1)
+            { // terminate
                 m_send_upto = -2;
                 terminate = true;
-            } else {
+            }
+            else
+            {
                 assert(m_send_upto > 0);
             }
         }
@@ -134,16 +162,18 @@ void AsyncBatch::main_thread(){
     COUT_DEBUG("Thread terminated");
 }
 
-
-void AsyncBatch::flush(bool synchronise){
+void AsyncBatch::flush(bool synchronise)
+{
     unique_lock<mutex> lock(m_thread_mutex);
     COUT_DEBUG("sync: " << synchronise << ", m_send_up: " << m_send_upto);
 
-    if(m_send_upto >= (m_batches_sz -1)){ // already full, wait for one batch to be done
-        m_thread_condvar.wait(lock, [this](){ return m_send_upto < m_batches_sz -1; });
+    if (m_send_upto >= (m_batches_sz - 1))
+    { // already full, wait for one batch to be done
+        m_thread_condvar.wait(lock, [this]() { return m_send_upto < m_batches_sz - 1; });
     }
 
-    if(m_batch_pos > 0){ // send the next batch
+    if (m_batch_pos > 0)
+    { // send the next batch
         m_batches_num_entries[m_batch_index] = m_batch_pos;
         m_batch_pos = 0;
         m_batch_index = (m_batch_index + 1) % m_batches_sz;
@@ -153,12 +183,12 @@ void AsyncBatch::flush(bool synchronise){
     lock.unlock();
     m_thread_condvar.notify_all(); // tell the async thread there are updates to process
 
-    if(synchronise){ // wait for all batches to be sent
+    if (synchronise)
+    { // wait for all batches to be sent
         lock.lock();
-        m_thread_condvar.wait(lock, [this](){ return m_send_upto == 0; });
+        m_thread_condvar.wait(lock, [this]() { return m_send_upto == 0; });
     }
 }
-
 
 /*****************************************************************************
  *                                                                           *
@@ -166,26 +196,30 @@ void AsyncBatch::flush(bool synchronise){
  *                                                                           *
  *****************************************************************************/
 
-void AsyncBatch::add_edge(gfe::graph::WeightedEdge edge) {
-    if(m_batch_pos == m_batch_sz) flush(false); // send all pending updates in the batch, reset m_batch_pos to 0
+void AsyncBatch::add_edge(gfe::graph::WeightedEdge edge)
+{
+    if (m_batch_pos == m_batch_sz)
+        flush(false); // send all pending updates in the batch, reset m_batch_pos to 0
     assert(m_batch_pos < m_batch_sz && "Overflow");
 
-    gfe::library::UpdateInterface::SingleUpdate* __restrict update = m_batches[m_batch_index] + m_batch_pos;
+    gfe::library::UpdateInterface::SingleUpdate * __restrict update = m_batches[m_batch_index] + m_batch_pos;
     update->m_source = edge.m_source;
     update->m_destination = edge.m_destination;
     update->m_weight = edge.m_weight;
     m_batch_pos++;
 }
 
-void AsyncBatch::remove_edge(gfe::graph::Edge edge) {
-    if(m_batch_pos == m_batch_sz) flush(false); // send all pending updates in the batch, reset m_batch_pos to 0
+void AsyncBatch::remove_edge(gfe::graph::Edge edge)
+{
+    if (m_batch_pos == m_batch_sz)
+        flush(false); // send all pending updates in the batch, reset m_batch_pos to 0
     assert(m_batch_pos < m_batch_sz && "Overflow");
 
-    gfe::library::UpdateInterface::SingleUpdate* __restrict update = m_batches[m_batch_index] + m_batch_pos;
+    gfe::library::UpdateInterface::SingleUpdate * __restrict update = m_batches[m_batch_index] + m_batch_pos;
     update->m_source = edge.m_source;
     update->m_destination = edge.m_destination;
     update->m_weight = -1;
     m_batch_pos++;
 }
 
-} // namespace
+} // namespace gfe::experiment::details

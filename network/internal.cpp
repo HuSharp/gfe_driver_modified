@@ -20,11 +20,11 @@
 
 using namespace std;
 
-namespace gfe::network {
+namespace gfe::network
+{
 
-// global def. of the lock used to wrap calls to thread-unsafe functions of the C library
+// global def. of the lock used to wrap calls to thread-unsafe functions of the
+// C library
 mutex g_network_lock;
 
-} // namespace
-
-
+} // namespace gfe::network

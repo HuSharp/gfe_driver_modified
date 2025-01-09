@@ -15,29 +15,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "reader.hpp"
 #include "utility.hpp"
 
 #include <fstream>
+
 #include "common/filesystem.hpp"
+#include "reader.hpp"
 
 using namespace std;
 
 #undef CURRENT_ERROR_TYPE
 #define CURRENT_ERROR_TYPE ::gfe::reader::ReaderError
 
-namespace gfe::reader {
+namespace gfe::reader
+{
 
-fstream init_fstream(const string& path){
+fstream init_fstream(const string & path)
+{
     fstream handle(path.c_str(), ios_base::in);
-    if(!handle.good()){ // some error occurred
-        if(!common::filesystem::file_exists(path)){
+    if (!handle.good())
+    { // some error occurred
+        if (!common::filesystem::file_exists(path))
+        {
             ERROR("The file `" << path << "' does not exist");
-        } else {
+        }
+        else
+        {
             ERROR("Cannot read the file: `" << path << "'");
         }
     }
     return handle;
 }
 
-} // namespace reader
+} // namespace gfe::reader
