@@ -30,7 +30,6 @@
 #include "gtest/gtest.h"
 #include "library/baseline/adjacency_list.hpp"
 #include "library/interface.hpp"
-#include "third-party/libcuckoo/cuckoohash_map.hh"
 
 #if defined(HAVE_LIVEGRAPH)
 #include "library/livegraph/livegraph_driver.hpp"
@@ -166,9 +165,7 @@ static void parallel(
             // the function returns true if the edge has been inserted. Repeat the
             // loop if it cannot insert the edge as one of the vertices is still being
             // inserted by another thread
-            while (!interface->add_edge(edge))
-            { /* nop */
-            };
+            while (!interface->add_edge(edge)) { /* nop */ };
         }
 
         interface->on_thread_destroy(thread_id);

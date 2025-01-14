@@ -71,6 +71,27 @@ AC_DEFUN([MY_INTEL_TBB], [
 ])
 
 #############################################################################
+# spdlog
+# Check for fmt library
+have_spdlog="unknown"; # Perform the check only once when invoking MY_SPDLOG()
+AC_DEFUN([MY_SPDLOG], [
+    if test x"${have_spdlog}" == x"unknown"; then
+        have_spdlog="yes" # assume spdlog is available
+        AC_CHECK_HEADER([spdlog/spdlog.h], [
+        ], [have_spdlog="no"], [ [/* avoid default includes */] ])
+    fi
+
+    if test x"${have_spdlog}" == x"no"; then
+        AC_MSG_ERROR(["The dependency library spdlog is not available on this machine"]);
+    else
+        LIBS="${LIBS} -lspdlog"
+        LIBS="${LIBS} -lfmt"
+        LIBS="${LIBS} -I/usr/include"
+    fi
+
+])
+
+#############################################################################
 # libevent >2.1.1
 have_libevent="unknown"; # Perform the check only once when invoking MY_LIBEVENT()
 AC_DEFUN([MY_LIBEVENT], [
@@ -575,6 +596,8 @@ if ( test x"${with_sortledton}" != x"" && test x"${with_sortledton}" != "no" ); 
     fi
 
     MY_INTEL_TBB()
+
+    MY_SPDLOG()
 
     path_sortledton=$(realpath "${with_sortledton}")
     path_sortledton_library="${path_sortledton}/libsortledton.a"

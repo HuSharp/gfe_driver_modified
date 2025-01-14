@@ -357,14 +357,14 @@
 // 20110325, but maintenance releases in the 4.4 and 4.5 series followed
 // this date, so check for those versions by their date stamps.
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html#abi.versioning
-#if GTEST_LANG_CXX11                                                                            \
-    && (!defined(__GLIBCXX__)                                                                   \
-        || (__GLIBCXX__ >= 20110325ul && /* GCC >= 4.6.0 */ /* Blacklist of patch releases of \
-                                                older branches: */ \
-                __GLIBCXX__ != 20110416ul                                                       \
-            && /* GCC 4.4.6 */                                                                  \
-            __GLIBCXX__ != 20120313ul && /* GCC 4.4.7 */                                        \
-            __GLIBCXX__ != 20110428ul && /* GCC 4.5.3 */                                        \
+#if GTEST_LANG_CXX11                                                                              \
+    && (!defined(__GLIBCXX__)                                                                     \
+        || (__GLIBCXX__ >= 20110325ul && /* GCC >= 4.6.0 */ /* Blacklist of patch releases of   \
+                                              older branches: */ \
+                __GLIBCXX__ != 20110416ul                                                         \
+            && /* GCC 4.4.6 */                                                                    \
+            __GLIBCXX__ != 20120313ul && /* GCC 4.4.7 */                                          \
+            __GLIBCXX__ != 20110428ul && /* GCC 4.5.3 */                                          \
             __GLIBCXX__ != 20120702ul)) /* GCC 4.5.4 */
 #define GTEST_STDLIB_CXX11 1
 #endif
@@ -1251,24 +1251,15 @@ public:
 
 #if GTEST_HAS_GLOBAL_STRING
 
-    RE(const ::string & regex)
-    {
-        Init(regex.c_str());
-    } // NOLINT
+    RE(const ::string & regex) { Init(regex.c_str()); } // NOLINT
 
 #endif // GTEST_HAS_GLOBAL_STRING
 
-    RE(const char * regex)
-    {
-        Init(regex);
-    } // NOLINT
+    RE(const char * regex) { Init(regex); } // NOLINT
     ~RE();
 
     // Returns the string representation of the regex.
-    const char * pattern() const
-    {
-        return pattern_;
-    }
+    const char * pattern() const { return pattern_; }
 
     // FullMatch(str, re) returns true iff regular expression re matches
     // the entire str.
@@ -1277,25 +1268,13 @@ public:
     //
     // FIXME: make FullMatch() and PartialMatch() work
     // when str contains NUL characters.
-    static bool FullMatch(const ::std::string & str, const RE & re)
-    {
-        return FullMatch(str.c_str(), re);
-    }
-    static bool PartialMatch(const ::std::string & str, const RE & re)
-    {
-        return PartialMatch(str.c_str(), re);
-    }
+    static bool FullMatch(const ::std::string & str, const RE & re) { return FullMatch(str.c_str(), re); }
+    static bool PartialMatch(const ::std::string & str, const RE & re) { return PartialMatch(str.c_str(), re); }
 
 #if GTEST_HAS_GLOBAL_STRING
 
-    static bool FullMatch(const ::string & str, const RE & re)
-    {
-        return FullMatch(str.c_str(), re);
-    }
-    static bool PartialMatch(const ::string & str, const RE & re)
-    {
-        return PartialMatch(str.c_str(), re);
-    }
+    static bool FullMatch(const ::string & str, const RE & re) { return FullMatch(str.c_str(), re); }
+    static bool PartialMatch(const ::string & str, const RE & re) { return PartialMatch(str.c_str(), re); }
 
 #endif // GTEST_HAS_GLOBAL_STRING
 

@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cctype>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <regex>
 

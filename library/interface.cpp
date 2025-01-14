@@ -703,10 +703,10 @@ vector<ImplementationManifest> implementations()
  *****************************************************************************/
 Interface::Interface() {}
 Interface::~Interface() {}
-void Interface::on_main_init(int num_threads){};
-void Interface::on_thread_init(int thread_id){};
-void Interface::on_thread_destroy(int thread_id){};
-void Interface::on_main_destroy(){};
+void Interface::on_main_init(int num_threads) {};
+void Interface::on_thread_init(int thread_id) {};
+void Interface::on_thread_destroy(int thread_id) {};
+void Interface::on_main_destroy() {};
 bool Interface::has_edge(uint64_t source, uint64_t destination) const
 {
     return !isnan(get_weight(source, destination));

@@ -246,14 +246,8 @@ unique_ptr<cuckoohash_map<uint64_t, uint64_t>> WeightedEdgeStream::vertex_table(
     auto populate_vertex_table = [this, vertex_table](uint64_t start, uint64_t length) {
         for (uint64_t i = start, end = start + length; i < end; i++)
         {
-            vertex_table->upsert(
-                m_sources->get_value_at(i),
-                [](uint64_t & value) { value += 1; },
-                1);
-            vertex_table->upsert(
-                m_destinations->get_value_at(i),
-                [](uint64_t & value) { value += 1; },
-                1);
+            vertex_table->upsert(m_sources->get_value_at(i), [](uint64_t & value) { value += 1; }, 1);
+            vertex_table->upsert(m_destinations->get_value_at(i), [](uint64_t & value) { value += 1; }, 1);
         }
     };
 

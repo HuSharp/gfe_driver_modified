@@ -442,6 +442,7 @@ std::chrono::microseconds GraphalyticsSequential::execute()
 
 void GraphalyticsSequential::report(bool save_in_db)
 {
+    LOG("Report the results of the Graphalytics suite");
     if (!m_exec_bfs.empty())
     {
         ExecStatistics stats{m_exec_bfs};

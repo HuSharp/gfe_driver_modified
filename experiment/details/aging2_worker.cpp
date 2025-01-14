@@ -319,8 +319,7 @@ void Aging2Worker::main_execute_updates()
 
         if (release_memory)
         {
-            COUT_DEBUG(
-                "Releasing a buffer of cardinality " << operations->size() << ", " << m_updates.size() - 1
+            LOG("Releasing a buffer of cardinality " << operations->size() << ", " << m_updates.size() - 1
                                                      << " buffers left");
             if (m_master.parameters().m_memfp_physical)
             {
@@ -333,7 +332,7 @@ void Aging2Worker::main_execute_updates()
                 m_updates_mem_usage -= utility::MemoryUsage::get_allocated_space(m_updates[0]->data());
             }
 
-            COUT_DEBUG("Memory footprint: " << m_updates_mem_usage << " bytes");
+            LOG("Memory footprint: " << m_updates_mem_usage << " bytes");
             delete m_updates[0];
             m_updates.pop();
         }
@@ -463,9 +462,7 @@ void Aging2Worker::graph_insert_edge(graph::WeightedEdge edge)
         // the function returns true if the edge has been inserted. Repeat the loop
         // if it cannot insert the edge as one of the vertices is still being
         // inserted by another thread
-        while (!m_library->add_edge_v2(edge))
-        { /* nop */
-        };
+        while (!m_library->add_edge_v2(edge)) { /* nop */ };
     }
     else
     { // measure the latency of the insertion

@@ -20,7 +20,7 @@
 #include "data-structure/VersionedBlockedEdgeIterator.h"
 #include "data-structure/data_types.h"
 #include "not_implemented.hpp"
-#include "third-party/gapbs/gapbs.hpp"
+// #include "third-party/gapbs/gapbs.hpp"
 #include "utility/timeout_service.hpp"
 
 using namespace gapbs;
@@ -42,7 +42,9 @@ SortledtonDriver::SortledtonDriver(bool is_graph_directed, size_t properties_siz
     {
         throw std::invalid_argument("Only undirected graphs are currently supported by the front-end");
     }
+    cout << "Creating the SortledtonDriver" << endl;
     ds = new VersioningBlockedSkipListAdjacencyList(block_size, properties_size, tm);
+    cout << "Created the SortledtonDriver" << endl;
 }
 
 SortledtonDriver::~SortledtonDriver()
