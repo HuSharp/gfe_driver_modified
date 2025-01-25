@@ -91,6 +91,21 @@ AC_DEFUN([MY_SPDLOG], [
 
 ])
 
+# tcmalloc
+have_tcmalloc="unknown"
+AC_DEFUN([MY_TCMALLOC], [
+   if test x"${have_tcmalloc}" == x"unknown"; then
+       have_tcmalloc="yes"
+       AC_CHECK_HEADER([gperftools/tcmalloc.h], [], [have_tcmalloc="no"], [])
+   fi
+
+   if test x"${have_tcmalloc}" == x"no"; then
+       AC_MSG_ERROR(["TCMalloc library not found"])
+   else
+       LIBS="${LIBS} -ltcmalloc"
+   fi
+])
+
 #############################################################################
 # libevent >2.1.1
 have_libevent="unknown"; # Perform the check only once when invoking MY_LIBEVENT()
@@ -598,6 +613,8 @@ if ( test x"${with_sortledton}" != x"" && test x"${with_sortledton}" != "no" ); 
     MY_INTEL_TBB()
 
     MY_SPDLOG()
+
+    MY_TCMALLOC()
 
     path_sortledton=$(realpath "${with_sortledton}")
     path_sortledton_library="${path_sortledton}/libsortledton.a"

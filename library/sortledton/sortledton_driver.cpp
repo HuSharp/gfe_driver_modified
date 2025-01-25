@@ -323,14 +323,14 @@ bool SortledtonDriver::remove_edge(gfe::graph::Edge e)
 
 void SortledtonDriver::run_gc()
 {
-    if (!gced)
-    {
-        Timer t;
-        t.start();
-        ds->gc_all();
-        gced = true;
-        cout << "Running GC took: " << t;
-    }
+    // if (!gced)
+    // {
+    //     Timer t;
+    //     t.start();
+    //     ds->gc_all();
+    //     gced = true;
+    //     cout << "Running GC took: " << t;
+    // }
 }
 
 static void save_bfs(vector<pair<uint64_t, uint>> & result, const char * dump2file)
