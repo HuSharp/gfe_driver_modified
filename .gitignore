@@ -4,6 +4,7 @@
 /.settings/
 /eclipse_symbols.xml
 /logs/
+/result/
 
 # IntelliJ IDEA / CLion project files
 *.idea
