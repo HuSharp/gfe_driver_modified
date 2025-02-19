@@ -5,6 +5,8 @@
 /eclipse_symbols.xml
 /logs/
 /result/
+/binary/
+/data/
 
 # IntelliJ IDEA / CLion project files
 *.idea

@@ -1,14 +1,14 @@
 #!/bin/zsh
 
 # Define the command to run
-command="../build/gfe_driver_sortleton -G /local/jinhaohu/graph/dataset/graph500-24.properties \
--u --log /local/jinhaohu/graph/graphlog/build/graph500-24-1_0.graphlog \
--l sortledton.4 -w 8 -r 8 --block_size 512 -d results2.sqlite3 \
---aging_timeout 2h -R 1 --mixed_workload true  --blacklist lcc,sssp,bfs,pagerank,wcc"
+command="../build/gfe_driver_sortleton_profile -G /local/jinhaohu/graph/dataset/graph500-22.properties \
+-u --log /local/jinhaohu/graph/dataset/graph500-22-1.0.graphlog \
+-l sortledton.4 -w 20 -r 8 --block_size 512 -d results2.sqlite3 \
+--aging_timeout 2h -R 1 --mixed_workload true  --blacklist lcc,sssp,cdlp,wcc,bfs"
 # --mixed_workload true 
 # Log directory and base log file name
 log_dir="../logs"
-log_base="sortledton_mixed_cdlp_24.log"
+log_base="profile_sortledton_w_20_r_8_mixed_pagerank_22.log"
 
 # Start the for loop in nohup
 nohup zsh -c "
