@@ -102,9 +102,9 @@ def analyze_data(input_file):
     fig.patch.set_facecolor('white')
     
     # Save the figure with high DPI for better quality
-        # Save the figure with high DPI for better quality
-    truncated_file = input_file.split('/')[-1].split('.')[0]
-    save_file = f'sortletdon_24_{truncated_file}.png'
+    truncated_file = input_file.split('.')[0]
+    print("truncated_file: ", truncated_file)
+    save_file = f'{truncated_file}.png'
     plt.savefig(save_file, dpi=300, bbox_inches='tight')
     plt.close()
     

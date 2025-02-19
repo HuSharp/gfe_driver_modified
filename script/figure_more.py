@@ -36,9 +36,9 @@ def create_dual_plot(data1, data2, data3, data4, config, fig, regular_ax, log_ax
     
     # Regular scale plot
     regular_ax.scatter(x1_valid, y1_valid, s=20, alpha=0.6, color='red', label='sortledton')
-    regular_ax.scatter(x2_valid, y2_valid, s=20, alpha=0.6, color='blue', label='vortex_read_latest')
-    regular_ax.scatter(x3_valid, y3_valid, s=20, alpha=0.6, color='green', label='vortex_stale_read_10s')
-    regular_ax.scatter(x4_valid, y4_valid, s=20, alpha=0.6, color='orange', label='vortex_stale_read_15s')
+    regular_ax.scatter(x2_valid, y2_valid, s=20, alpha=0.6, color='blue', label='vortex_bfs_s2_100')
+    regular_ax.scatter(x3_valid, y3_valid, s=20, alpha=0.6, color='green', label='vortex_bfs_stale_10s')
+    regular_ax.scatter(x4_valid, y4_valid, s=20, alpha=0.6, color='orange', label='vortex_bfs_stale_15s')
 
     
     # Fit trend lines for both datasets
@@ -64,9 +64,9 @@ def create_dual_plot(data1, data2, data3, data4, config, fig, regular_ax, log_ax
     # Plot both datasets in log scale
     for x_valid, y_valid, color, label in [
         (x1_valid, y1_valid, 'red', 'sortledton'),
-        (x2_valid, y2_valid, 'blue', 'vortex_read_latest'),
-        (x3_valid, y3_valid, 'green', 'vortex_stale_read_10s'),
-        (x4_valid, y4_valid, 'orange', 'vortex_stale_read_15s')
+        (x2_valid, y2_valid, 'blue', 'vortex_bfs_s2_100'),
+        (x3_valid, y3_valid, 'green', 'vortex_bfs_stale_10s'),
+        (x4_valid, y4_valid, 'orange', 'vortex_bfs_stale_15s')
     ]:
         x_log = x_valid + eps
         y_log = y_valid + eps
@@ -90,12 +90,12 @@ def create_dual_plot(data1, data2, data3, data4, config, fig, regular_ax, log_ax
     log_ax.grid(True)
     log_ax.legend()
 
-def analyze_data(sortledton, vortex_read_latest, vortex_stale_read_10s, vortex_stale_read_15s):
+def analyze_data(sortledton, vortex_bfs_s2_100, vortex_bfs_stale_10s, vortex_bfs_stale_15s):
     # Read data from both files
     data1 = pd.read_csv(sortledton, header=None)
-    data2 = pd.read_csv(vortex_read_latest, header=None)
-    data3 = pd.read_csv(vortex_stale_read_10s, header=None)
-    data4 = pd.read_csv(vortex_stale_read_15s, header=None)
+    data2 = pd.read_csv(vortex_bfs_s2_100, header=None)
+    data3 = pd.read_csv(vortex_bfs_stale_10s, header=None)
+    data4 = pd.read_csv(vortex_bfs_stale_15s, header=None)
     
     # Set column names for both datasets
     vortex_columns = ['snapshot', 'size', 'total_wait', 'num_invokes', 'avg_wait']
@@ -142,17 +142,17 @@ def analyze_data(sortledton, vortex_read_latest, vortex_stale_read_10s, vortex_s
     
     # Get filenames for title
     # file1_name = sortledton.split('/')[-1].split('.')[0]
-    # file2_name = vortex_read_latest.split('/')[-1].split('.')[0]
+    # file2_name = vortex_bfs_s2_100.split('/')[-1].split('.')[0]
     
     # Adjust layout and set title
-    # fig.suptitle(f'Wait Time Analysis Comparison\n{sortledton} vs {vortex_read_latest}\n(Linear and Log Scales)', 
+    # fig.suptitle(f'Wait Time Analysis Comparison\n{sortledton} vs {vortex_bfs_s2_100}\n(Linear and Log Scales)', 
     #              y=0.95, fontsize=16)
     
     # Set figure background color to white
     fig.patch.set_facecolor('white')
     
     # Save the figure with high DPI for better quality
-    save_file = f'comparison_stale_read(s2_c100).png'
+    save_file = f'comparison_bfs_stale_read(s2).png'
     plt.savefig(save_file, dpi=300, bbox_inches='tight')
     plt.close()
     
@@ -162,9 +162,9 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Compare wait time data from two files and create plots')
     parser.add_argument('sortledton', help='First input CSV file path')
-    parser.add_argument('vortex_read_latest', help='Second input CSV file path')
-    parser.add_argument('vortex_stale_read_10s', help='Second input CSV file path')
-    parser.add_argument('vortex_stale_read_15s', help='Second input CSV file path')
+    parser.add_argument('vortex_bfs_s2_100', help='Second input CSV file path')
+    parser.add_argument('vortex_bfs_stale_10s', help='Second input CSV file path')
+    parser.add_argument('vortex_bfs_stale_15s', help='Second input CSV file path')
     args = parser.parse_args()
 
     # Enable parallel processing for numpy operations
@@ -177,7 +177,7 @@ def main():
     print(f"Using {num_cores} CPU cores")
     
     # Analyze both datasets
-    analyze_data(args.sortledton, args.vortex_read_latest, args.vortex_stale_read_10s, args.vortex_stale_read_15s)
+    analyze_data(args.sortledton, args.vortex_bfs_s2_100, args.vortex_bfs_stale_10s, args.vortex_bfs_stale_15s)
 
 if __name__ == '__main__':
     main()
