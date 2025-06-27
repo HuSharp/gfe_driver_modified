@@ -99,6 +99,8 @@
         "locale": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "*.ipp": "cpp"
-    }
+        "*.ipp": "cpp",
+        "filesystem": "cpp"
+    },
+    "cmake.sourceDirectory": "/DS/dsg-blockchain/work/gfe_driver2/third-party/googletest/googletest"
 }

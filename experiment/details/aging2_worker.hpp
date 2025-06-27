@@ -37,6 +37,16 @@ class Aging2Worker {
     Aging2Worker& operator=(const Aging2Worker&) = delete;
 
     Aging2Master& m_master; // pointer to the master thread
+
+    struct CheckpointData {
+        uint64_t target_edges;
+        uint64_t actual_edges;
+        uint64_t duration_us; 
+        double   throughput;  
+        
+        uint64_t memory_usage_bytes = 0;
+    };
+
     library::UpdateInterface* m_library; // the library being evaluated
     const int m_worker_id; // this id is passed to the interface #on_worker_init and #on_worker_destroy
     common::CircularArray<std::vector<gfe::graph::WeightedEdge>*> m_updates; // the updates to perform

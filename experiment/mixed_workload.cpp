@@ -26,8 +26,8 @@ MixedWorkloadResult MixedWorkload::execute()
 
     chrono::seconds progress_check_interval(1);
     this_thread::sleep_for(progress_check_interval); // Poor mans synchronization to ensure
-        // AgingExperiment was able to setup the master
-        // etc
+    // AgingExperiment was able to setup the master
+    // etc
     while (true)
     {
         if (m_aging_experiment.progress_so_far() > 0.1
@@ -52,6 +52,30 @@ MixedWorkloadResult MixedWorkload::execute()
            && aging_result_future.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
     {
         m_graphalytics.execute();
+
+        // create 10 threads to execute graphalytics
+        // use vector of futures to wait for all threads to finish
+        //         auto graphalytics_result_future = std::async(std::launch::async, [this]() {
+        // #if defined(HAVE_OPENMP)
+        //             if (m_read_threads != 0)
+        //             {
+        //                 omp_set_num_threads(m_read_threads);
+        //             }
+        // #endif
+        //             return m_graphalytics.execute();
+        //         });
+
+        //         auto graphalytics_result_future2 = std::async(std::launch::async, [this]() {
+        // #if defined(HAVE_OPENMP)
+        //             if (m_read_threads != 0)
+        //             {
+        //                 omp_set_num_threads(m_read_threads);
+        //             }
+        // #endif
+        //             return m_graphalytics2.execute();
+        //         });
+        //         graphalytics_result_future.wait();
+        //         graphalytics_result_future2.wait();
     }
 
     cout << "Waiting for aging experiment to finish" << endl;

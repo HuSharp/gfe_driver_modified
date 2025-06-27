@@ -647,6 +647,57 @@ if ( test x"${with_sortledton}" != x"" && test x"${with_sortledton}" != "no" ); 
 fi
 
 #############################################################################
+# Support for the Vortex
+# Usage:
+# --with-vortex=/path/to/vortex/build
+#
+
+AC_ARG_WITH([vortex], [AS_HELP_STRING([--with-vortex@<:@=ARG@:>@], [
+    Enable the support to Vortex. The argument needs to be the path where the library has been built.
+])], [])
+
+if ( test x"${with_vortex}" != x"" && test x"${with_vortex}" != "no" ); then
+    if( test x"${with_vortex}" == x"yes" ); then
+        AC_MSG_ERROR(["the full path to the Vortex build needs to be specified, e.g. --with-vortex=/path/to/vortex/build"]);
+    fi
+
+    MY_INTEL_TBB()
+
+    MY_SPDLOG()
+
+    MY_TCMALLOC()
+
+    path_vortex=$(realpath "${with_vortex}")
+    path_vortex_library="${path_vortex}/libvortex.a"
+    AC_CHECK_FILE([${path_vortex_library}], [  ],  [ AC_MSG_ERROR([file not found: ${path_vortex_library}]) ])
+
+    path_vortex_makefile="${path_vortex}/Makefile"
+    AC_CHECK_FILE([${path_vortex_makefile}], [  ],  [ AC_MSG_ERROR(["file not found: ${path_vortex_makefile}"]) ])
+
+    path_vortex_includedir=$(realpath "${path_vortex}/../")
+    AC_MSG_NOTICE([Vortex include path: ${path_vortex_includedir}])
+
+    AS_VAR_APPEND([CPPFLAGS], [" -I${path_vortex_includedir} -I${path_vortex}/include"])
+    AS_VAR_APPEND([CPPFLAGS], [" -I${path_vortex_includedir}/versioning -I${path_vortex_includedir}/data-structures -I${path_vortex}/include"])
+    # TODO clean up include structure in vortex
+    AS_VAR_SET([LIBS], ["-L${path_vortex} -lvortex ${LIBS}"])
+
+    # Try to compile a program with Vortex
+    AC_LINK_IFELSE([
+        AC_LANG_PROGRAM([[
+            @%:@include <data-structure/TransactionManager.h>
+        ]], [[
+            TransactionManager tm(1);
+        ]])
+    ], [], [
+        AC_MSG_FAILURE([unable to compile and link an executable with Vortex])
+    ])
+
+    AC_MSG_NOTICE([Vortex support enabled])
+    AS_VAR_APPEND([CPPFLAGS], [" -DHAVE_VORTEX"])
+fi
+
+#############################################################################
 # Support for the Sortledton V2
 # Usage:
 # --with-sortledton=/path/to/sortledton_v2/build

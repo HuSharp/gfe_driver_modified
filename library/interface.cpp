@@ -58,6 +58,9 @@
 #if defined(HAVE_SORTLEDTON)
 #include "sortledton/sortledton_driver.hpp"
 #endif
+#if defined(HAVE_VORTEX)
+#include "sortledton/sortledton_driver.hpp"
+#endif
 
 #if defined(HAVE_SORTLEDTONV2)
 #include "sortledton_v2/sortledton_driver_v2.hpp"
@@ -326,6 +329,44 @@ std::unique_ptr<Interface> generate_sortledton(bool directed_graph)
 }
 #endif
 
+#if defined(HAVE_VORTEX)
+std::unique_ptr<Interface> generate_vortex(bool directed_graph)
+{
+    auto & config = configuration();
+    int read = config.num_threads_read();
+    int write = config.num_threads_write();
+    uint64_t contention = config.contention();
+    uint64_t elapsed_time = config.elapsed_time();
+    uint64_t low_degree_threshold = config.low_degree();
+    uint64_t high_degree_threshold = config.high_degree();
+    uint64_t rate_limit = config.rate_limit();
+    bool write_snapshot = config.write_snapshot();
+
+    string snapshot_csv = "";
+    if (write_snapshot)
+    {
+        snapshot_csv = "c" + to_string(contention) + "_e" + to_string(elapsed_time) + "_l"
+            + to_string(low_degree_threshold) + "_h" + to_string(high_degree_threshold) + "_r" + to_string(rate_limit)
+            + "_w" + to_string(write) + "_r" + to_string(read) + "_snapshot.csv";
+    }
+
+    cout << "Running Sortledton with block size: " << config.block_size() << " contention: " << contention
+         << " elapsed_time: " << elapsed_time << " low_degree_vertex_threshold: " << low_degree_threshold
+         << " high_degree_vertex_threshold: " << high_degree_threshold << " rate_limit: " << rate_limit
+         << " snapshot csv: " << snapshot_csv << " write_snapshot:" << write_snapshot << endl;
+    return unique_ptr<Interface>{new SortledtonDriver(
+        directed_graph,
+        8,
+        config.block_size(),
+        write,
+        contention,
+        elapsed_time,
+        low_degree_threshold,
+        high_degree_threshold,
+        snapshot_csv)};
+}
+#endif
+
 #if defined(HAVE_SORTLEDTONV2)
 std::unique_ptr<Interface> generate_sortledton_v2(bool directed_graph)
 {
@@ -576,6 +617,10 @@ vector<ImplementationManifest> implementations()
    */
 //    result.emplace_back("sortledton-steam-gc-3", "Sortledton",
 //    &generate_sortledton);
+#endif
+
+#if defined(HAVE_VORTEX)
+    result.emplace_back("vortex", "Vortex", &generate_vortex);
 #endif
 
 #if defined(HAVE_SORTLEDTONV2)
@@ -848,7 +893,7 @@ void UpdateInterface::build()
 uint64_t UpdateInterface::num_levels() const
 {
     return 0; // by default, we assume that the implementation is not LSM/delta
-        // based, and it doesn`t create new levels/deltas/snapshots
+    // based, and it doesn`t create new levels/deltas/snapshots
 }
 
 } // namespace gfe::library

@@ -17,49 +17,72 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <vector>
-#include <atomic>
 
 #include "common/static_index.hpp"
 #include "experiment/aging2_result.hpp"
 #include "graph/edge.hpp"
 #include "third-party/libcuckoo/cuckoohash_map.hh"
+#include "token_rate_limiter.hpp"
 
 // forward declarations
-namespace gfe::experiment { class Aging2Experiment; }
-namespace gfe::experiment::details { class Aging2Worker; }
-namespace gfe::experiment::details { class LatencyStatistics; }
+namespace gfe::experiment
+{
+class Aging2Experiment;
+}
+namespace gfe::experiment::details
+{
+class Aging2Worker;
+}
+namespace gfe::experiment::details
+{
+class LatencyStatistics;
+}
 
-namespace gfe::experiment::details {
+namespace gfe::experiment::details
+{
 
-class Aging2Master {
+class Aging2Master
+{
     friend class Aging2Worker;
 
-    const Aging2Experiment& m_parameters;
+    const Aging2Experiment & m_parameters;
     const bool m_is_directed; // is the graph directed?
-    std::vector<Aging2Worker*> m_workers; // pool of workers
+    std::vector<Aging2Worker *> m_workers; // pool of workers
     std::atomic<int64_t> m_num_operations_performed = 0; // current number of operations performed so far
-    std::atomic<int> m_last_progress_reported = 0; // the last progress of the experiment, reported by any of the worker threads. E.g. 1%, 2%, 3%, so on.
+    std::atomic<int> m_last_progress_reported
+        = 0; // the last progress of the experiment, reported by any of the worker threads. E.g. 1%, 2%, 3%, so on.
 
     // report how long it took to perform 1x, 2x, 3x, ... updates w.r.t. to the loaded graph.
     std::chrono::steady_clock::time_point m_time_start; // when the computation started
-    uint64_t* m_reported_times = nullptr; // microsecs
+    uint64_t * m_reported_times = nullptr; // microsecs
     std::atomic<int> m_last_time_reported = 0;
 
     // latencies of each update
-    uint64_t* m_latencies = nullptr; // nanosecs
+    uint64_t * m_latencies = nullptr; // nanosecs
     uint64_t m_latencies_num_insertions = 0; // total number of operations that are insertions
     uint64_t m_latencies_num_deletions = 0; // total number of operations that are deletions
 
     // Stinger is so slow, that we stop the experiment after four hours
     std::atomic<bool> m_stop_experiment = false;
-    enum class StopReason { NOT_SET, TIMEOUT_HIT, MEMORY_FOOTPRINT }; // the reason the experiment has been stopped
+    enum class StopReason
+    {
+        NOT_SET,
+        TIMEOUT_HIT,
+        MEMORY_FOOTPRINT
+    }; // the reason the experiment has been stopped
     StopReason m_stop_reason = StopReason::NOT_SET;
 
     Aging2Result m_results; // final results of the experiment
 
     std::atomic_bool m_experiment_running = false;
+
+    std::shared_ptr<TokenBucketRateLimiter> m_rate_limiter;
+    std::shared_ptr<TokenBucketRateLimiter> get_rate_limiter() { return m_rate_limiter; }
+    void initialize_rate_limiter();
+    void report_rate_stats(uint64_t cur_ops);
 
     // Initialise the set of workers
     void init_workers();
@@ -92,13 +115,13 @@ class Aging2Master {
     void log_num_vtx_edges();
 
     // Grab the vertex id of a random (final) edge
-    void set_random_vertex_id(uint64_t* edges, uint64_t num_edges);
+    void set_random_vertex_id(uint64_t * edges, uint64_t num_edges);
 
     // Get the current memory footprint of the experiment, in bytes
     uint64_t memory_footprint() const;
 
 public:
-    Aging2Master(const Aging2Experiment& parameters);
+    Aging2Master(const Aging2Experiment & parameters);
 
     // Destructor
     ~Aging2Master();
@@ -116,9 +139,9 @@ public:
     uint64_t num_edges_final_graph() const;
 
     // Access the configuration of this experiment
-    const Aging2Experiment& parameters() const { return m_parameters; }
+    const Aging2Experiment & parameters() const { return m_parameters; }
 
     double progress_so_far() const;
 };
 
-}
+} // namespace gfe::experiment::details

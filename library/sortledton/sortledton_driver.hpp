@@ -40,6 +40,7 @@ class SortledtonDriver
 
 protected:
     void * m_pImpl; // pointer to the sortleton library
+    int num_threads;
     TransactionManager tm;
     VersioningBlockedSkipListAdjacencyList * ds;
     const bool m_is_directed;
@@ -93,7 +94,16 @@ protected:
 public:
 public:
 public:
-    SortledtonDriver(bool is_graph_directed, size_t properties_size, int block_size);
+    SortledtonDriver(
+        bool is_graph_directed,
+        size_t properties_size,
+        int block_size,
+        int num_threads,
+        uint64_t contention_threshold = 1024,
+        uint64_t elapsed_time = 1,
+        uint64_t low_degree_threshold = 1000,
+        uint64_t high_degree_threshold = 5000,
+        string write_file_name = "");
 
     /**
          * Destructor

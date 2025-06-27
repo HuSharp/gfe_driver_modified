@@ -1251,15 +1251,24 @@ public:
 
 #if GTEST_HAS_GLOBAL_STRING
 
-    RE(const ::string & regex) { Init(regex.c_str()); } // NOLINT
+    RE(const ::string & regex)
+    {
+        Init(regex.c_str());
+    } // NOLINT
 
 #endif // GTEST_HAS_GLOBAL_STRING
 
-    RE(const char * regex) { Init(regex); } // NOLINT
+    RE(const char * regex)
+    {
+        Init(regex);
+    } // NOLINT
     ~RE();
 
     // Returns the string representation of the regex.
-    const char * pattern() const { return pattern_; }
+    const char * pattern() const
+    {
+        return pattern_;
+    }
 
     // FullMatch(str, re) returns true iff regular expression re matches
     // the entire str.
@@ -1268,13 +1277,25 @@ public:
     //
     // FIXME: make FullMatch() and PartialMatch() work
     // when str contains NUL characters.
-    static bool FullMatch(const ::std::string & str, const RE & re) { return FullMatch(str.c_str(), re); }
-    static bool PartialMatch(const ::std::string & str, const RE & re) { return PartialMatch(str.c_str(), re); }
+    static bool FullMatch(const ::std::string & str, const RE & re)
+    {
+        return FullMatch(str.c_str(), re);
+    }
+    static bool PartialMatch(const ::std::string & str, const RE & re)
+    {
+        return PartialMatch(str.c_str(), re);
+    }
 
 #if GTEST_HAS_GLOBAL_STRING
 
-    static bool FullMatch(const ::string & str, const RE & re) { return FullMatch(str.c_str(), re); }
-    static bool PartialMatch(const ::string & str, const RE & re) { return PartialMatch(str.c_str(), re); }
+    static bool FullMatch(const ::string & str, const RE & re)
+    {
+        return FullMatch(str.c_str(), re);
+    }
+    static bool PartialMatch(const ::string & str, const RE & re)
+    {
+        return PartialMatch(str.c_str(), re);
+    }
 
 #endif // GTEST_HAS_GLOBAL_STRING
 

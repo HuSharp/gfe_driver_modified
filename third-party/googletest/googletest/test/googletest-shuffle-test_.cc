@@ -32,7 +32,8 @@
 
 #include "gtest/gtest.h"
 
-namespace {
+namespace
+{
 
 using ::testing::EmptyTestEventListener;
 using ::testing::InitGoogleTest;
@@ -46,7 +47,9 @@ using ::testing::internal::scoped_ptr;
 // The test methods are empty, as the sole purpose of this program is
 // to print the test names before/after shuffling.
 
-class A : public Test {};
+class A : public Test
+{
+};
 TEST_F(A, A) {}
 TEST_F(A, B) {}
 
@@ -75,28 +78,28 @@ TEST(DISABLED_D, DISABLED_B) {}
 
 // This printer prints the full test names only, starting each test
 // iteration with a "----" marker.
-class TestNamePrinter : public EmptyTestEventListener {
- public:
-  virtual void OnTestIterationStart(const UnitTest& /* unit_test */,
-                                    int /* iteration */) {
-    printf("----\n");
-  }
+class TestNamePrinter : public EmptyTestEventListener
+{
+public:
+    virtual void OnTestIterationStart(const UnitTest & /* unit_test */, int /* iteration */) { printf("----\n"); }
 
-  virtual void OnTestStart(const TestInfo& test_info) {
-    printf("%s.%s\n", test_info.test_case_name(), test_info.name());
-  }
+    virtual void OnTestStart(const TestInfo & test_info)
+    {
+        printf("%s.%s\n", test_info.test_case_name(), test_info.name());
+    }
 };
 
-}  // namespace
+} // namespace
 
-int main(int argc, char **argv) {
-  InitGoogleTest(&argc, argv);
+int main(int argc, char ** argv)
+{
+    InitGoogleTest(&argc, argv);
 
-  // Replaces the default printer with TestNamePrinter, which prints
-  // the test name only.
-  TestEventListeners& listeners = UnitTest::GetInstance()->listeners();
-  delete listeners.Release(listeners.default_result_printer());
-  listeners.Append(new TestNamePrinter);
+    // Replaces the default printer with TestNamePrinter, which prints
+    // the test name only.
+    TestEventListeners & listeners = UnitTest::GetInstance()->listeners();
+    delete listeners.Release(listeners.default_result_printer());
+    listeners.Append(new TestNamePrinter);
 
-  return RUN_ALL_TESTS();
+    return RUN_ALL_TESTS();
 }

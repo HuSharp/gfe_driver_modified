@@ -432,10 +432,18 @@ void Aging2Worker::graph_execute_batch_updates(graph::WeightedEdge * __restrict 
 template <bool with_latency>
 void Aging2Worker::graph_execute_batch_updates0(graph::WeightedEdge * __restrict updates, uint64_t num_updates)
 {
+    std::shared_ptr<TokenBucketRateLimiter> rate_limiter = m_master.get_rate_limiter();
+    const bool enable_rate_limit = m_master.parameters().m_enable_rate_limit && rate_limiter != nullptr;
+
     for (uint64_t i = 0; i < num_updates; i++)
     {
         if (m_master.m_stop_experiment)
             break; // timeout, we're done
+
+        if (enable_rate_limit && rate_limiter)
+        {
+            rate_limiter->acquire(1);
+        }
 
         if (updates[i].m_weight >= 0)
         { // insertion

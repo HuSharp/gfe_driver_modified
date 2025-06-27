@@ -63,7 +63,7 @@ static void run_standalone(int argc, char * argv[])
     if (path_graph.empty())
         ERROR("Path to the graph to load not set (use the parameter --graph)");
 
-        // OpenMP settings
+    // OpenMP settings
 #if defined(HAVE_OPENMP)
     if (configuration().num_threads_omp() > 0)
     {
@@ -177,6 +177,7 @@ static void run_standalone(int argc, char * argv[])
                 agingExperiment.set_measure_latency(configuration().measure_latency());
                 agingExperiment.set_num_reports_per_ops(configuration().get_num_recordings_per_ops());
                 agingExperiment.set_timeout(chrono::seconds{configuration().get_timeout_aging2()});
+                agingExperiment.set_rate_limit(configuration().rate_limit());
                 agingExperiment.set_measure_memfp(configuration().measure_memfp());
                 agingExperiment.set_memfp_physical(configuration().get_aging_memfp_physical());
                 agingExperiment.set_memfp_threshold(configuration().get_aging_memfp_threshold());
@@ -193,10 +194,12 @@ static void run_standalone(int argc, char * argv[])
 
                 configuration().blacklist(properties);
                 GraphalyticsSequential exp_seq{impl_ga, configuration().num_repetitions(), properties};
+                GraphalyticsSequential exp_seq2{impl_ga, configuration().num_repetitions(), properties};
 
                 MixedWorkload experiment(
                     agingExperiment,
                     exp_seq,
+                    exp_seq2,
                     configuration().num_threads(ThreadsType::THREADS_READ));
                 auto result = experiment.execute();
                 cout << "Saving result" << endl;
@@ -218,6 +221,7 @@ static void run_standalone(int argc, char * argv[])
                 experiment.set_build_frequency(chrono::milliseconds{configuration().get_build_frequency()});
                 experiment.set_max_weight(configuration().max_weight());
                 experiment.set_measure_latency(configuration().measure_latency());
+                experiment.set_rate_limit(configuration().rate_limit());
                 experiment.set_num_reports_per_ops(configuration().get_num_recordings_per_ops());
                 experiment.set_timeout(chrono::seconds{configuration().get_timeout_aging2()});
                 experiment.set_measure_memfp(configuration().measure_memfp());

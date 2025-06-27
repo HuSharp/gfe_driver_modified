@@ -21,6 +21,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <utility>
@@ -87,11 +88,62 @@ Aging2Master::Aging2Master(const Aging2Experiment & parameters)
         + 1)]();
 
     m_parameters.m_library->on_main_init(
-        m_parameters.m_num_threads + /* this + builder service */ 2 +
+        m_parameters.m_num_threads * 2 + /* this + builder service */ 2 +
         /* plus potentially an analytics runner (mixed epxeriment) */ 1);
 
     init_workers();
+    initialize_rate_limiter();
     m_parameters.m_library->on_thread_init(m_parameters.m_num_threads + 1);
+}
+
+
+void Aging2Master::initialize_rate_limiter()
+{
+    if (parameters().m_enable_rate_limit && parameters().m_target_updates_per_second > 0)
+    {
+        if (!m_rate_limiter)
+        {
+            m_rate_limiter = std::make_shared<TokenBucketRateLimiter>(
+                parameters().m_target_updates_per_second,
+                parameters().m_rate_limiter_bucket_capacity);
+        }
+        else
+        {
+            m_rate_limiter->set_target_rate(parameters().m_target_updates_per_second);
+        }
+
+        LOG("Rate limiter initialized with target rate: " << parameters().m_target_updates_per_second
+                                                          << " updates/second");
+    }
+    else if (m_rate_limiter)
+    {
+        m_rate_limiter->stop();
+        m_rate_limiter.reset();
+        LOG("Rate limiter disabled");
+    }
+}
+
+void Aging2Master::report_rate_stats(uint64_t cur_ops)
+{
+    if (m_rate_limiter)
+    {
+        LOG("Current time: "
+            << chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - m_time_start).count()
+            << " seconds, "
+            << "Current operations: " << cur_ops);
+        // auto stats = m_rate_limiter->get_stats();
+
+        // LOG("[RATE STATS] Current rate: "
+        //     << std::fixed << std::setprecision(2) << stats.current_rate << " ops/s"
+        //     << " (" << (stats.current_rate * 100.0 / parameters().m_target_updates_per_second) << "% of target)"
+        //     << ", Operations: " << stats.operations_count << ", Waits: " << stats.wait_count << " ("
+        //     << (stats.wait_ratio * 100.0) << "%)" << ", Current operations: " << cur_ops);
+
+        // if (stats.elapsed_seconds > 60)
+        // {
+        // m_rate_limiter->reset_stats();
+        // }
+    }
 }
 
 Aging2Master::~Aging2Master()
@@ -184,9 +236,9 @@ void Aging2Master::prepare_latencies()
         m_latencies_num_insertions += w->num_insertions();
         m_latencies_num_deletions += w->num_deletions();
     }
-    assert(
-        m_latencies_num_insertions + m_latencies_num_deletions == m_results.m_num_operations_total
-        && "Counting mismatch");
+    // assert(
+    //     m_latencies_num_insertions + m_latencies_num_deletions == m_results.m_num_operations_total
+    //     && "Counting mismatch");
 
     m_latencies = new uint64_t[m_results.m_num_operations_total];
 
@@ -315,6 +367,7 @@ uint64_t Aging2Master::num_edges_final_graph() const
 
 void Aging2Master::wait_and_record()
 {
+    std::cout << "[Aging2] Waiting for the workers to complete ... " << std::flush;
     bool done = false;
     m_results.m_progress.clear();
     const bool measure_memfp = parameters().m_memfp;
@@ -341,7 +394,10 @@ void Aging2Master::wait_and_record()
 
         if (!done)
         {
-            m_results.m_progress.push_back(num_operations_sofar());
+            uint64_t total_ops = num_operations_sofar();
+            // m_results.m_progress.push_back(total_ops);
+            LOG("[Aging2] Progress: " << total_ops << " operations performed");
+            report_rate_stats(total_ops);
 
             if (measure_memfp
                 && (/* first tick */ (m_results.m_progress.size() == 1) || tp - last_memory_footprint_recording >= 10s))

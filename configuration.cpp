@@ -205,6 +205,25 @@ void Configuration::initialise(int argc, char * argv[])
         "is_timestamped",
         "If the graph log is sorted by external timestamps and should not be "
         "shuffled.",
+        value<bool>()->default_value("false"))(
+        "rate_limit",
+        "Limit the number of updates per second. The value is the number of "
+        "updates per second. The default is 0, which means no limit.",
+        value<uint64_t>()->default_value("0"))(
+        "contention",
+        "The contention threshold for the contention Vortex.",
+        value<uint64_t>()->default_value("2048"))(
+        "elapsed_time",
+        "The contention elapsed time for the contention Vortex.",
+        value<uint64_t>()->default_value("1000"))(
+        "low_degree",
+        "The low degree vertex threshold for the contention Vortex. ",
+        value<uint64_t>()->default_value("5000"))(
+        "high_degree",
+        "The high degree vertex threshold for the contention Vortex. ",
+        value<uint64_t>()->default_value("1"))(
+        "write_snapshot",
+        "Whether to write a snapshot csv of the graph after each update. ",
         value<bool>()->default_value("false"));
 
     try
@@ -237,8 +256,9 @@ void Configuration::initialise(int argc, char * argv[])
             }
             if (result["max_weight"].count() > 0)
             {
-                ERROR("Cannot specify the option --max_weight together with the log "
-                      "file");
+                ERROR(
+                    "Cannot specify the option --max_weight together with the log "
+                    "file");
             }
 
             // read the properties from the log file
@@ -330,8 +350,9 @@ void Configuration::initialise(int argc, char * argv[])
         // library to evaluate
         if (result["library"].count() == 0)
         {
-            ERROR("Missing mandatory argument --library. Which library do you want "
-                  "to evaluate??");
+            ERROR(
+                "Missing mandatory argument --library. Which library do you want "
+                "to evaluate??");
         }
         else
         {
@@ -463,6 +484,30 @@ void Configuration::initialise(int argc, char * argv[])
         {
             set_block_size(result["block_size"].as<int>());
         }
+        if (result["rate_limit"].count() > 0)
+        {
+            set_rate_limit(result["rate_limit"].as<uint64_t>());
+        }
+        if (result["contention"].count() > 0)
+        {
+            set_contention(result["contention"].as<uint64_t>());
+        }
+        if (result["elapsed_time"].count() > 0)
+        {
+            set_elapsed_time(result["elapsed_time"].as<uint64_t>());
+        }
+        if (result["low_degree"].count() > 0)
+        {
+            set_low_degree(result["low_degree"].as<uint64_t>());
+        }
+        if (result["high_degree"].count() > 0)
+        {
+            set_high_degree(result["high_degree"].as<uint64_t>());
+        }
+        if (result["write_snapshot"].count() > 0)
+        {
+            set_write_snapshot(result["write_snapshot"].as<bool>());
+        }
 
         if (result["is_timestamped"].count() > 0)
         {
@@ -535,8 +580,9 @@ void Configuration::set_num_threads_omp(int value)
     ASSERT(value >= 0);
 #if !defined(HAVE_OPENMP)
     if (value > 0)
-        ERROR("Cannot set the maximum number of threads to use with OpenMP: the "
-              "driver was not configured with support of OpenMP");
+        ERROR(
+            "Cannot set the maximum number of threads to use with OpenMP: the "
+            "driver was not configured with support of OpenMP");
 #endif
 
     m_num_threads_omp = value;
@@ -547,8 +593,9 @@ void Configuration::set_num_threads_read(int value)
     ASSERT(value >= 0);
 #if !defined(HAVE_OPENMP)
     if (value > 0)
-        ERROR("Cannot set the maximum number of threads to use: the driver was not "
-              "configured with support of OpenMP");
+        ERROR(
+            "Cannot set the maximum number of threads to use: the driver was not "
+            "configured with support of OpenMP");
 #endif
 
     m_num_threads_read = value;
@@ -618,6 +665,31 @@ void Configuration::set_block_size(size_t block_size)
     m_block_size = block_size;
 }
 
+void Configuration::set_rate_limit(uint64_t rate_limit)
+{
+    m_rate_limit = rate_limit;
+}
+void Configuration::set_contention(uint64_t contention)
+{
+    m_contention = contention;
+}
+void Configuration::set_elapsed_time(uint64_t elapsed_time)
+{
+    m_elapsed_time = elapsed_time;
+}
+void Configuration::set_low_degree(uint64_t low_degree)
+{
+    m_low_degree = low_degree;
+}
+void Configuration::set_high_degree(uint64_t high_degree)
+{
+    m_high_degree = high_degree;
+}
+void Configuration::set_write_snapshot(bool write_snapshot)
+{
+    m_write_snapshot = write_snapshot;
+}
+
 void Configuration::set_is_timestamped(bool timestamped)
 {
     m_is_timestamped_graph = timestamped;
@@ -668,6 +740,39 @@ bool Configuration::is_load() const
 bool Configuration::is_mixed_workload() const
 {
     return m_is_mixed_workload;
+}
+
+uint64_t Configuration::rate_limit()
+{
+    return m_rate_limit;
+}
+uint64_t Configuration::contention()
+{
+    return m_contention;
+}
+uint64_t Configuration::elapsed_time()
+{
+    return m_elapsed_time;
+}
+uint64_t Configuration::low_degree()
+{
+    return m_low_degree;
+}
+uint64_t Configuration::high_degree()
+{
+    return m_high_degree;
+}
+int Configuration::num_threads_read()
+{
+    return m_num_threads_read;
+}
+int Configuration::num_threads_write()
+{
+    return m_num_threads_write;
+}
+bool Configuration::write_snapshot()
+{
+    return m_write_snapshot;
 }
 
 std::unique_ptr<library::Interface> Configuration::generate_graph_library()
@@ -802,6 +907,12 @@ void Configuration::save_parameters()
     params.push_back(P{"validate_output", to_string(validate_output())});
     params.push_back(P{"validate_output_graph", get_validation_graph()});
     params.push_back(P{"block_size", to_string(block_size())});
+    params.push_back(P{"rate_limit", to_string(rate_limit())});
+    params.push_back(P{"contention", to_string(contention())});
+    params.push_back(P{"elapsed_time", to_string(elapsed_time())});
+    params.push_back(P{"low_degree", to_string(low_degree())});
+    params.push_back(P{"high_degree", to_string(high_degree())});
+    params.push_back(P{"write_snapshot", to_string(write_snapshot())});
     params.push_back(P{"is_mixed_workload", to_string(m_is_mixed_workload)});
 
     if (!m_blacklist.empty())

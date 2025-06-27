@@ -34,16 +34,34 @@ extern mutex _log_mutex [[maybe_unused]];
 namespace gfe::library
 {
 
-SortledtonDriver::SortledtonDriver(bool is_graph_directed, size_t properties_size, int block_size)
+SortledtonDriver::SortledtonDriver(
+    bool is_graph_directed,
+    size_t properties_size,
+    int block_size,
+    int num_threads,
+    uint64_t contention_threshold,
+    uint64_t elapsed_time,
+    uint64_t low_degree_threshold,
+    uint64_t high_degree_threshold,
+    string write_file_name)
     : tm(1)
     , m_is_directed(is_graph_directed)
+    , num_threads(num_threads)
 {
     if (is_graph_directed == true)
     {
         throw std::invalid_argument("Only undirected graphs are currently supported by the front-end");
     }
     cout << "Creating the SortledtonDriver" << endl;
-    ds = new VersioningBlockedSkipListAdjacencyList(block_size, properties_size, tm);
+    ds = new VersioningBlockedSkipListAdjacencyList(
+        block_size,
+        properties_size,
+        tm,
+        contention_threshold,
+        elapsed_time,
+        low_degree_threshold,
+        high_degree_threshold,
+        write_file_name);
     cout << "Created the SortledtonDriver" << endl;
 }
 
@@ -60,6 +78,7 @@ void SortledtonDriver::on_main_init(int num_threads)
 
 void SortledtonDriver::on_thread_init(int thread_id)
 {
+    std::cout << "Initializing thread " << thread_id << std::endl;
     tm.register_thread(thread_id);
 }
 
@@ -415,6 +434,10 @@ void SortledtonDriver::bfs(uint64_t source_vertex_id, const char * dump2file)
 
 void SortledtonDriver::pagerank(uint64_t num_iterations, double damping_factor, const char * dump2file)
 {
+    // random generate a thread id
+    // int thread_id = rand() % num_threads + num_threads + 3;
+    // cout << "Thread id: " << thread_id << endl;
+    // tm.register_thread(thread_id);
     tm.register_thread(0);
     SnapshotTransaction tx = tm.getSnapshotTransaction(ds, false);
 
@@ -430,6 +453,7 @@ void SortledtonDriver::pagerank(uint64_t num_iterations, double damping_factor, 
     {
         save_result<double>(external_ids, dump2file);
     }
+    // tm.deregister_thread(thread_id);
     tm.deregister_thread(0);
 }
 
@@ -507,7 +531,7 @@ bool SortledtonDriver::can_be_validated() const
  * Algorithm parameters
  */
 static const uint64_t LCC_NUM_WORKERS = thread::hardware_concurrency(); // number of workers / logical threads to
-    // use
+// use
 // static const uint64_t LCC_NUM_WORKERS = 1; // number of workers / logical
 // threads to use
 static constexpr uint64_t LCC_TASK_SIZE = 1ull << 10; // number of vertices processed in each task
@@ -518,7 +542,7 @@ class Master
 {
     SnapshotTransaction & ds; // CSR data structure
     atomic<uint64_t> * m_num_triangles; // number of triangles counted so far for
-        // the given vertex, array of num_vertices
+    // the given vertex, array of num_vertices
     std::atomic<uint64_t> m_next; // counter to select the next task among the workers
 
     // Reserve the space in the hash maps m_score and m_state so that they can be
@@ -711,46 +735,58 @@ void Worker::process_vertex(uint64_t n1)
     uint64_t num_triangles = 0; // current number of triangles found for `n1'
     m_neighbours.clear();
 
-    SORTLEDTON_ITERATE_NAMED(ds, n1, n2, end_1, {
-        if (n2 > n1)
-            goto end_1; // we're done with n1
+    SORTLEDTON_ITERATE_NAMED(
+        ds,
+        n1,
+        n2,
+        end_1,
+        {
+            if (n2 > n1)
+                goto end_1; // we're done with n1
 
-        m_neighbours.push_back(n2);
-        uint64_t marker = 0; // current position in the neighbours vector, to merge
+            m_neighbours.push_back(n2);
+            uint64_t marker = 0; // current position in the neighbours vector, to merge
             // shared neighbours
 
-        SORTLEDTON_ITERATE_NAMED(ds, n2, n3, end_2, {
-            if (n3 > n2)
-                goto end_2; // we're done with n2
-            assert(n1 > n2 && n2 > n3); // we're looking for triangles of the kind c -
-                // b - a, with c > b && b > a
-
-            if (n3 > m_neighbours[marker])
-            { // merge with m_neighbours
-                do
+            SORTLEDTON_ITERATE_NAMED(
+                ds,
+                n2,
+                n3,
+                end_2,
                 {
-                    marker++;
-                } while (marker < m_neighbours.size() && n3 > m_neighbours[marker]);
-                if (marker >= m_neighbours.size())
-                    break; // there is nothing left to merge
-            }
+                    if (n3 > n2)
+                        goto end_2; // we're done with n2
+                    assert(n1 > n2 && n2 > n3); // we're looking for triangles of the kind c -
+                    // b - a, with c > b && b > a
 
-            if (n3 == m_neighbours[marker])
-            { // match !
-                num_triangles += 2; // we've discovered both n1 - n2 - n3 and n1 - n3 -
-                    // n2; with n1 > n2 > n3
+                    if (n3 > m_neighbours[marker])
+                    { // merge with m_neighbours
+                        do
+                        {
+                            marker++;
+                        } while (marker < m_neighbours.size() && n3 > m_neighbours[marker]);
+                        if (marker >= m_neighbours.size())
+                            break; // there is nothing left to merge
+                    }
 
-                // increase the contribution for n2
-                m_master->num_triangles(n2) += 2;
-                // increase the contribution for n3
-                m_master->num_triangles(n3) += 2;
+                    if (n3 == m_neighbours[marker])
+                    { // match !
+                        num_triangles += 2; // we've discovered both n1 - n2 - n3 and n1 - n3 -
+                        // n2; with n1 > n2 > n3
 
-                marker++;
-                if (marker >= m_neighbours.size())
-                    goto end_2; // there is nothing left to merge
-            }
-        });
-    });
+                        // increase the contribution for n2
+                        m_master->num_triangles(n2) += 2;
+                        // increase the contribution for n3
+                        m_master->num_triangles(n3) += 2;
+
+                        marker++;
+                        if (marker >= m_neighbours.size())
+                            goto end_2; // there is nothing left to merge
+                    }
+                },
+                false);
+        },
+        false);
 
     if (num_triangles != 0)
     {
